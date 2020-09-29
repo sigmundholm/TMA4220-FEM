@@ -17,7 +17,7 @@ import numpy as np
 import scipy.spatial as spsa
 
 
-def getPlate(N):
+def get_plate(N):
     # Defining auxiliary variables.
     L = np.linspace(-1, 1, N)
     Y, X = np.meshgrid(L, L)

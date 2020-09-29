@@ -18,7 +18,7 @@ import numpy as np
 import scipy.spatial as spsa
 
 
-def GetSlice(N, theta):
+def get_slice(N, theta):
     # Controlling the input.
     if N < 3:
         raise RuntimeError("GetSlice", "Error. N >= 3 reguired.")

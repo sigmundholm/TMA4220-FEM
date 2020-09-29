@@ -17,29 +17,29 @@ import numpy as np
 import scipy.spatial as spsa
 
 
-def GetDisc(N):
+def get_disk(N):
     # Controlling the input.
     if N < 4:
         print("Error. N >= 4 reguired for input.")
         return
 
     # Defining auxiliary variables.
-    M, r, alpha, theta = CircleData(N)
+    M, r, alpha, theta = circle_data(N)
 
     # Generating the nodal points.
-    p = NodalPoints(M, N, alpha, theta, r)
+    p = nodal_points(M, N, alpha, theta, r)
 
     # Generating the elements.
     mesh = spsa.Delaunay(p)
     tri = mesh.simplices
 
     # Generating the boundary elements.
-    edge = FreeBoundary(N, alpha)
+    edge = free_boundary(N, alpha)
 
     return p, tri, edge
 
 
-def NodalPoints(M, N, alpha, theta, r):
+def nodal_points(M, N, alpha, theta, r):
     # Auxiliary function for generating nodal points.
     p = np.zeros((N, 2))
     k = 1
@@ -53,7 +53,7 @@ def NodalPoints(M, N, alpha, theta, r):
     return p
 
 
-def FreeBoundary(N, alpha):
+def free_boundary(N, alpha):
     # Auxiliary function for generating boundary nodes.
     E = np.arange(N - alpha[-1] + 1, N + 1)
     edge = np.zeros((len(E), 2), dtype=np.int)
@@ -65,7 +65,7 @@ def FreeBoundary(N, alpha):
     return edge
 
 
-def CircleData(N):
+def circle_data(N):
     # Number of outward circles,excluding the origin.
     M = np.int(np.floor(np.sqrt(N / np.pi)))
 

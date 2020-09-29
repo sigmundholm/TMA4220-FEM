@@ -17,7 +17,7 @@ import numpy as np
 import scipy.spatial as spsa
 
 
-def getBox(N):
+def get_box(N):
     # Defining auxiliary variables.
     L = np.linspace(0, 1, N)
     Y, X, Z = np.meshgrid(L, L, L)
@@ -34,15 +34,15 @@ def getBox(N):
 
     # Generating the elements.
     mesh = spsa.Delaunay(p)
-    tet = NodalPoints(p, mesh)
+    tet = nodal_points(p, mesh)
 
     # Generating the boundary elements.
-    edge = freeBoundary(mesh)
+    edge = free_boundary(mesh)
 
     return p, tet, edge
 
 
-def NodalPoints(p, mesh):
+def nodal_points(p, mesh):
     tet_temp = mesh.simplices
     tet = []
     for t in tet_temp:
@@ -59,7 +59,7 @@ def NodalPoints(p, mesh):
     return np.array(tet)
 
 
-def freeBoundary(mesh):
+def free_boundary(mesh):
     # Auxiliary function for generating boundary nodes.
     edge = []
     for ind, neigh in zip(mesh.simplices, mesh.neighbors):

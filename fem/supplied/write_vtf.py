@@ -50,7 +50,7 @@ import numpy as np
 from datetime import datetime
 
 
-def Write_VTF(p, tetr, *args, **kwargs):
+def write_vtf(p, tetr, *args, **kwargs):
     FILENAME = ""
     TimeSteps = []
 

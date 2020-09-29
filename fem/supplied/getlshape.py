@@ -17,7 +17,7 @@ import numpy as np
 import scipy.spatial as spsa
 
 
-def GetLShape(N):
+def get_l_shape(N):
     # Controlling the input.
     if N < 2:
         raise RuntimeError("GetLShape", "Error. N >= 2 reguired.")

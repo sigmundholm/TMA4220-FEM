@@ -18,7 +18,7 @@
 import numpy as np
 
 
-def RemoveUnused_3D(p, tetr, tri):
+def remove_unused_3d(p, tetr, tri):
     tmp = tetr[:, 0:4]
     N = np.shape(p)[0]
     used = np.zeros(N)

@@ -17,29 +17,29 @@ import numpy as np
 import scipy.spatial as spsa
 
 
-def GetSphere(N):
+def get_sphere(N):
     # Controlling the input.
     if N < 13:
         print("Error. N >= 13 reguired for input.")
         return
 
     # Defining auxiliary data.
-    M, r, alpha = SphereData(N)
+    M, r, alpha = sphere_data(N)
 
     # Generating the nodal points.
-    p = NodalPoints(M, r, alpha)
+    p = nodal_points(M, r, alpha)
 
     # Generating the elements.
     mesh = spsa.Delaunay(p)
-    tet = Elements(p, mesh)
+    tet = elements(p, mesh)
 
     # Generating the boundary elements.
-    edge = FreeBoundary(mesh)
+    edge = free_boundary(mesh)
 
     return p, tet, edge
 
 
-def SphereData(N):
+def sphere_data(N):
     # Approximating design on sphere.
     M = np.int(np.floor((np.sqrt(np.pi) * np.sqrt(12 * N + np.pi) - 3 * np.pi) / (4 * np.pi)))
     r = np.linspace(0, 1, M + 1)
@@ -66,18 +66,18 @@ def SphereData(N):
     return M, r, alpha
 
 
-def NodalPoints(M, r, alpha):
+def nodal_points(M, r, alpha):
     # Auxiliary function for generating nodal points.
     p = []
     p += [[0, 0, 0]]
     k = 1
     for i in range(1, M + 1):
-        p += Shell(alpha[i], r[i], (2.0 * i * np.pi) / (M + 1))
+        p += shell(alpha[i], r[i], (2.0 * i * np.pi) / (M + 1))
 
     return np.array(p)
 
 
-def Shell(N, rad, alpha):
+def shell(N, rad, alpha):
     # Auxiliary function generating a point cloud on a sphere shell of radius r.
     inc = np.pi * (3.0 - np.sqrt(5))
     off = 2.0 / N
@@ -91,7 +91,7 @@ def Shell(N, rad, alpha):
     return pts
 
 
-def Elements(p, mesh):
+def elements(p, mesh):
     # Auxiliary function for generating elements.
     tet_temp = mesh.simplices
     tet = []
@@ -110,7 +110,7 @@ def Elements(p, mesh):
     return np.array(tet)
 
 
-def FreeBoundary(mesh):
+def free_boundary(mesh):
     # Auxiliary function for generating boundary nodes.
     edge = []
     for ind, neigh in zip(mesh.simplices, mesh.neighbors):

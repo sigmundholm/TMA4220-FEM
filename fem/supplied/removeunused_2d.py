@@ -18,7 +18,7 @@
 import numpy as np
 
 
-def RemoveUnused_2D(p, tri, edge):
+def remove_unused_2d(p, tri, edge):
     tmp = tri[:, 0:3]
     N = np.shape(p)[0]
     used = np.zeros(N)
