@@ -1,0 +1,13 @@
+# Python
+*.pyc
+
+
+
+# Pycharm
+.idea/
+
+
+# Output
+*.png
+*.pdf
+*.vtf
