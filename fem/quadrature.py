@@ -93,7 +93,7 @@ def quadrature2D(p1, p2, p3, Nq, g):
     else:
         I = wq.T @ g(zqx, zqy)
 
-    if type(I) is int:
-        return I
-    else:
+    if hasattr(I, "__iter__"):
         return I[0]
+    else:
+        return I
