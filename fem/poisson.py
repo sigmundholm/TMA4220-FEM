@@ -53,6 +53,14 @@ class Poisson:
         self.system_rhs = np.zeros((self.n_dofs, 1))
         self.solution = np.zeros((self.n_dofs, 1))
 
+    @staticmethod
+    def is_dirichlet(x, y):
+        return True
+
+    @staticmethod
+    def dirichlet_value(x, y):
+        return 0
+
     def assemble_system(self):
         """
         Set up the stiffness matrix.
@@ -60,7 +68,7 @@ class Poisson:
         """
         guass = QGauss(dim=self.dim, degree=self.degree)
         fe_values = FE_Values(self.fe, guass, self.points, self.edges,
-                              update_gradients=True)
+                              Poisson.is_dirichlet, update_gradients=True)
         rhs = RightHandSide()
 
         for triangle in self.triangles:
@@ -79,6 +87,7 @@ class Poisson:
                 for j in fe_values.dof_indices():
                     # TODO gradient of linear shape functions are constant on
                     # each element.
+
                     expr = fe_values.shape_grad(i, None) \
                            @ fe_values.shape_grad(j, None)
                     res = guass.quadrature(points, lambda x, y: expr)
@@ -95,12 +104,20 @@ class Poisson:
         print(self.points)
         print(self.system_matrix)
         print(self.system_rhs)
+        # TODO this fixes so the matrix is invertible, but could just have
+        # removed those dofs that are not a dof from the matrix, so this
+        # wouldn't be needed. Would then have to set boundary values in a
+        # different way after the system is solved.
+        for i, point in enumerate(self.points):
+            if fe_values.is_boundary[i] and Poisson.is_dirichlet(*point):
+                self.system_matrix[i, i] = 1
+                self.system_rhs[i] = Poisson.dirichlet_value(*point)
 
     def set_boundary_conditions(self):
         pass
 
     def solve(self):
-        pass
+        self.solution = np.linalg.solve(self.system_matrix, self.system_rhs)
 
     def output_results(self):
         pass
@@ -109,12 +126,15 @@ class Poisson:
         self.make_grid()
         self.setup_system()
         self.assemble_system()
+        self.solve()
 
         plt.imshow(self.system_matrix)
         plt.show()
+        print("solution")
+        print(self.solution)
 
 
 if __name__ == '__main__':
-    p = Poisson(2, 1, 20)
+    p = Poisson(2, 1, 10)
 
     p.run()
