@@ -1,11 +1,22 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from fem.supplied import getdisc
-from fem.plotting import plot_mesh
 from fem.fe_values import FE_Values
 from fem.fe_q import FE_Q
+from fem.function import Function
+from fem.plotting import plot_mesh
+from fem.supplied import getdisc
 from fem.quadrature_lib import QGauss
+
+
+class RightHandSide(Function):
+    def value(self, x, y):
+        return 1
+
+
+class BoundaryValues(Function):
+    def value(self, x, y):
+        return 0
 
 
 class Poisson:
@@ -47,9 +58,10 @@ class Poisson:
         Set up the stiffness matrix.
         :return:
         """
-        quadrature = QGauss(dim=self.dim, degree=self.degree)
-        fe_values = FE_Values(self.fe, quadrature, self.points,
+        guass = QGauss(dim=self.dim, degree=self.degree)
+        fe_values = FE_Values(self.fe, guass, self.points, self.edges,
                               update_gradients=True)
+        rhs = RightHandSide()
 
         for triangle in self.triangles:
             # Nå er vi i en celle
@@ -69,9 +81,23 @@ class Poisson:
                     # each element.
                     expr = fe_values.shape_grad(i, None) \
                            @ fe_values.shape_grad(j, None)
-                    # fe_values.shape_grad(j, None)
-                    res = quadrature.quadrature(points, lambda x, y: expr)
-                    self.system_matrix[i, j] = res
+                    res = guass.quadrature(points, lambda x, y: expr)
+                    self.system_matrix[fe_values.local2global[i],
+                                       fe_values.local2global[j]] = res
+
+                def rhs_integrand(x, y):
+                    return fe_values.shape_value(i, x, y) \
+                           * rhs.value(x, y)
+
+                val = guass.quadrature(points, rhs_integrand)
+                self.system_rhs[fe_values.local2global[i]] = val
+
+        print(self.points)
+        print(self.system_matrix)
+        print(self.system_rhs)
+
+    def set_boundary_conditions(self):
+        pass
 
     def solve(self):
         pass
@@ -84,8 +110,11 @@ class Poisson:
         self.setup_system()
         self.assemble_system()
 
+        plt.imshow(self.system_matrix)
+        plt.show()
+
 
 if __name__ == '__main__':
-    p = Poisson(2, 1, 10)
+    p = Poisson(2, 1, 20)
 
     p.run()

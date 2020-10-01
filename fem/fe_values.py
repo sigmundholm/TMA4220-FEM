@@ -15,23 +15,25 @@ class FE_Values:
     shape_functions = []
     shape_gradients = None
 
-    global2local = {}
+    # Maps from local to global dof indices.
     local2global = {}
 
-    def __init__(self, fe: FE_Q, quadrature: QGauss, points,
+    def __init__(self, fe: FE_Q, quadrature: QGauss, points, edges,
                  update_values=True, update_gradients=False,
                  update_quadrature_points=False,
                  update_normal_vectors=False, update_JxW_values=False):
         self.fe = fe
         self.quadrature = quadrature
+
         self.points = points  # TODO not in original dealii function
+        self.edges = edges
 
         # Flags for what to update when running FEValues.reinit(cell)
         self.update_values = update_values
         self.update_gradients = update_gradients
-        self.update_quadrature_points = update_quadrature_points
-        self.update_normal_vectors = update_normal_vectors
-        self.update_JxW_values = update_JxW_values
+        # self.update_quadrature_points = update_quadrature_points
+        # self.update_normal_vectors = update_normal_vectors
+        # self.update_JxW_values = update_JxW_values
 
     def reinit(self, cell):
         """
@@ -44,10 +46,10 @@ class FE_Values:
         self.cell = cell
         self.triangle_corners = self.points[cell]
 
-        self.global2local = {glob: loc for glob, loc in zip(cell, range(len(
-            cell)))}
-        print(cell)
-        print(self.global2local)
+        # self.global2local = {glob: loc for glob, loc in zip(cell, range(len(cell)))}
+
+        self.local2global = {loc: glob for loc, glob in zip(range(len(cell)),
+                                                            cell)}
 
         # Create the matrix to find the coefficients for the shape
         # functions on the current triangle (assumes linear shape
@@ -60,7 +62,6 @@ class FE_Values:
             rhs[index] = 1
             plane_consts = np.linalg.solve(point_matrix, rhs)
             self.shape_functions.append(plane_consts)
-            # self.grad_phi.append(plane_consts[:2])
 
         if self.update_gradients:
             if self.shape_gradients is None:
@@ -81,14 +82,15 @@ class FE_Values:
         """
         raise NotImplementedError()
 
-    def shape_value(self, i, q_index):
+    def shape_value(self, i, x, y):
         """
         Return the value of shape function i evaluated in quadrature point q.
         :param i: global index
         :param q_index: local quadrature point index
         :return:
         """
-        raise NotImplementedError()
+        constants = self.shape_functions
+        return constants[0] * x + constants[1] * y + constants[2]
 
     def shape_grad(self, i, q_index):
         """
