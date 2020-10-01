@@ -54,7 +54,7 @@ class Poisson:
         self.solution = np.zeros((self.n_dofs, 1))
 
     @staticmethod
-    def is_dirichlet(x, y):
+    def is_dirichlet(p: np.ndarray):
         return True
 
     def assemble_system(self):
@@ -105,7 +105,7 @@ class Poisson:
                         print("ok")
                     self.system_rhs[fe_values.local2global[i]] += val
 
-        print(self.points)
+        # print(self.points)
         print(self.system_matrix)
         print(self.system_rhs)
         # TODO this fixes so the matrix is invertible, but could just have
@@ -114,7 +114,7 @@ class Poisson:
         # different way after the system is solved.
 
         for i, point in enumerate(self.points):
-            if fe_values.is_boundary[i] and Poisson.is_dirichlet(*point):
+            if fe_values.is_boundary[i] and Poisson.is_dirichlet(point):
                 self.system_matrix[i, i] = 1
                 self.system_rhs[i] = boundary_values.value(point)
 
@@ -141,5 +141,4 @@ class Poisson:
 
 if __name__ == '__main__':
     p = Poisson(2, 1, 20)
-
     p.run()

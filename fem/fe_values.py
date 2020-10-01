@@ -29,7 +29,7 @@ class FE_Values:
         :param points:
         :param edges:
         :param is_dirichlet: a function that takes a point on the
-        boundary (x, y) and returns True if this point is on the Dirichlet
+        boundary x (a vector) and returns True if this point is on the Dirichlet
         part of the boundary.
         :param update_values:
         :param update_gradients:
@@ -72,6 +72,8 @@ class FE_Values:
         self.cell = cell
         self.triangle_corners = self.points[cell]
 
+        self.quadrature.reinit(self.triangle_corners)
+
         self.local2global = {loc: glob for loc, glob in zip(range(len(cell)),
                                                             cell)}
 
@@ -105,7 +107,7 @@ class FE_Values:
         :param q_index: local index of the quadrature point on this cell.
         :return: the quadrature point as a vector (one-dim vector for dim=1).
         """
-        return self.quadrature.quadrature_point(self.triangle_corners, q_index)
+        return self.quadrature.quadrature_point(q_index)
 
     def shape_value(self, i, q_index) -> float:
         """
@@ -115,12 +117,12 @@ class FE_Values:
         :return:
         """
         # TODO denne er feil
-        x, y = self.quadrature_point(q_index)
-        if self.is_boundary[self.local2global[i]] and self.is_dirichlet(x, y):
+        x_q = self.quadrature_point(q_index)
+        if self.is_boundary[self.local2global[i]] and self.is_dirichlet(x_q):
             return 0
 
         constants = self.shape_functions[i]
-        return constants[0] * x + constants[1] * y + constants[2]
+        return constants[:2] @ x_q + constants[2]
 
     def shape_grad(self, i, q_index) -> np.ndarray:
         """
@@ -137,7 +139,7 @@ class FE_Values:
         factor = 1
         global_index = self.local2global[i]
         if self.is_boundary[global_index] and self.is_dirichlet(
-                *self.points[global_index]):
+                self.points[global_index]):
             # print("bdd and dirichlet", global_index, self.points[
             # global_index])
             # TODO this test strongly assumes linear shape functions.
@@ -153,4 +155,5 @@ class FE_Values:
         :param q_index: index of the quadrature point on this cell.
         :return:
         """
-        return self.quadrature.weights[q_index]
+        return self.quadrature.weights[q_index] \
+               * self.quadrature.jacobian()

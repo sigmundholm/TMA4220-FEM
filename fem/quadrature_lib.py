@@ -19,6 +19,9 @@ class QGauss:
     zetas = None
     weights = None
 
+    triangle_corners = None
+    jacobi_determinant = 0
+
     def __init__(self, dim, degree):
         self.dim = dim
         self.degree = degree
@@ -36,7 +39,14 @@ class QGauss:
         else:
             raise NotImplementedError()
 
-    def quadrature_point(self, points: np.ndarray, q_index: int):
+    def reinit(self, points):
+        self.triangle_corners = points
+        a, d = points[1] - points[0]
+        b, e = points[2] - points[0]
+        # jacobi determinant times 0.5 just because
+        self.jacobi_determinant = (a * e - b * d) * 0.5
+
+    def quadrature_point(self, q_index: int):
         """
         Return quadrature point with index q_index in the global coordinate
         system.
@@ -46,13 +56,18 @@ class QGauss:
         :return:
         """
         if self.dim == 2:
-            return points.T @ self.zetas[q_index]
+            return self.triangle_corners.T @ self.zetas[q_index]
+        else:
+            raise NotImplementedError()
 
     def quadrature(self, points: np.ndarray, g: callable):
         if self.dim == 2:
             return quadrature2D(*points, Nq=self.degree, g=g)
         else:
             raise NotImplementedError()
+
+    def jacobian(self):
+        return self.jacobi_determinant
 
 
 if __name__ == '__main__':
