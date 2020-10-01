@@ -10,12 +10,12 @@ from fem.quadrature_lib import QGauss
 
 
 class RightHandSide(Function):
-    def value(self, x, y):
+    def value(self, p):
         return 1
 
 
 class BoundaryValues(Function):
-    def value(self, x, y):
+    def value(self, p):
         return 0
 
 
@@ -57,10 +57,6 @@ class Poisson:
     def is_dirichlet(x, y):
         return True
 
-    @staticmethod
-    def dirichlet_value(x, y):
-        return 0
-
     def assemble_system(self):
         """
         Set up the stiffness matrix.
@@ -69,7 +65,9 @@ class Poisson:
         guass = QGauss(dim=self.dim, degree=self.degree)
         fe_values = FE_Values(self.fe, guass, self.points, self.edges,
                               Poisson.is_dirichlet, update_gradients=True)
+
         rhs = RightHandSide()
+        boundary_values = BoundaryValues()
 
         for triangle in self.triangles:
             # Nå er vi i en celle
@@ -81,25 +79,31 @@ class Poisson:
 
             fe_values.reinit(triangle)
 
-            points = self.points[triangle]
+            for q_index in fe_values.quadrature_point_indices():
+                print("q index", q_index)
+                x_q = fe_values.quadrature_point(q_index)
 
-            for i in fe_values.dof_indices():
-                for j in fe_values.dof_indices():
-                    # TODO gradient of linear shape functions are constant on
-                    # each element.
+                for i in fe_values.dof_indices():
+                    print()
+                    for j in fe_values.dof_indices():
+                        res = fe_values.shape_grad(i, q_index) \
+                              @ fe_values.shape_grad(j, q_index) \
+                              * fe_values.JxW(q_index)
 
-                    expr = fe_values.shape_grad(i, None) \
-                           @ fe_values.shape_grad(j, None)
-                    res = guass.quadrature(points, lambda x, y: expr)
-                    self.system_matrix[fe_values.local2global[i],
-                                       fe_values.local2global[j]] = res
+                        self.system_matrix[fe_values.local2global[i],
+                                           fe_values.local2global[j]] += res
 
-                def rhs_integrand(x, y):
-                    return fe_values.shape_value(i, x, y) \
-                           * rhs.value(x, y)
-
-                val = guass.quadrature(points, rhs_integrand)
-                self.system_rhs[fe_values.local2global[i]] = val
+                    # TODO pass på det dette integralet er positivt for
+                    # poisson med f=1.
+                    val = fe_values.shape_value(i, q_index) * rhs.value(x_q) \
+                          * fe_values.JxW(q_index)
+                    print("integral", val)
+                    shape_val = fe_values.shape_value(i, q_index)
+                    if shape_val < 0 or shape_val > 1:
+                        print("shape-val", shape_val)
+                    else:
+                        print("ok")
+                    self.system_rhs[fe_values.local2global[i]] += val
 
         print(self.points)
         print(self.system_matrix)
@@ -108,10 +112,11 @@ class Poisson:
         # removed those dofs that are not a dof from the matrix, so this
         # wouldn't be needed. Would then have to set boundary values in a
         # different way after the system is solved.
+
         for i, point in enumerate(self.points):
             if fe_values.is_boundary[i] and Poisson.is_dirichlet(*point):
                 self.system_matrix[i, i] = 1
-                self.system_rhs[i] = Poisson.dirichlet_value(*point)
+                self.system_rhs[i] = boundary_values.value(point)
 
     def set_boundary_conditions(self):
         pass
@@ -135,6 +140,6 @@ class Poisson:
 
 
 if __name__ == '__main__':
-    p = Poisson(2, 1, 10)
+    p = Poisson(2, 1, 20)
 
     p.run()

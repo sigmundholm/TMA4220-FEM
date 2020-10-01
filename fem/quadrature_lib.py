@@ -27,6 +27,7 @@ class QGauss:
             if degree == 1:
                 self.zetas, self.weights = ONE_POINT
             elif degree <= 3:
+                self.degree = 3
                 self.zetas, self.weights = THREE_POINTS
             elif degree == 4:
                 self.zetas, self.weights = FOUR_POINTS

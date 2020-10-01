@@ -3,12 +3,11 @@ import numpy as np
 
 class Function:
 
-    def value(self, x_1, x_2):
+    def value(self, p):
         """
         :param p: the point to evaluate the function in.
         :return:
         """
-        # TODO take the point as a vector argument
         raise NotImplementedError()
 
     def value_list(self, points):

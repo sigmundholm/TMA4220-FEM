@@ -38,7 +38,7 @@ class FE_Values:
         :param update_JxW_values:
         """
         self.fe = fe
-        self.quadrature = quadrature
+        self.quadrature: QGauss = quadrature
 
         self.points = points  # TODO not in original dealii function
         self.edges = edges
@@ -94,8 +94,8 @@ class FE_Values:
             for i in range(len((self.cell))):
                 self.shape_gradients.append(self.shape_functions[i][:2])
 
-    def quadrature_point_inidices(self):
-        raise NotImplementedError()
+    def quadrature_point_indices(self):
+        return list(range(self.quadrature.degree))
 
     def dof_indices(self):
         return list(range(len(self.cell)))
@@ -105,22 +105,24 @@ class FE_Values:
         :param q_index: local index of the quadrature point on this cell.
         :return: the quadrature point as a vector (one-dim vector for dim=1).
         """
-        raise self.quadrature.quadrature_point(self.triangle_corners, q_index)
+        return self.quadrature.quadrature_point(self.triangle_corners, q_index)
 
-    def shape_value(self, i, x, y):
+    def shape_value(self, i, q_index) -> float:
         """
         Return the value of shape function i evaluated in quadrature point q.
         :param i: global index
         :param q_index: local quadrature point index
         :return:
         """
+        # TODO denne er feil
+        x, y = self.quadrature_point(q_index)
         if self.is_boundary[self.local2global[i]] and self.is_dirichlet(x, y):
             return 0
 
-        constants = self.shape_functions
+        constants = self.shape_functions[i]
         return constants[0] * x + constants[1] * y + constants[2]
 
-    def shape_grad(self, i, q_index):
+    def shape_grad(self, i, q_index) -> np.ndarray:
         """
         Return the gradient for the i-th shape function (local index on this
         cell), in the q-th quadrature point. The index of the shape functions
@@ -136,7 +138,8 @@ class FE_Values:
         global_index = self.local2global[i]
         if self.is_boundary[global_index] and self.is_dirichlet(
                 *self.points[global_index]):
-            print("bdd and dirichlet", global_index, self.points[global_index])
+            # print("bdd and dirichlet", global_index, self.points[
+            # global_index])
             # TODO this test strongly assumes linear shape functions.
             factor = 0
 
@@ -144,11 +147,10 @@ class FE_Values:
             raise Exception("Must set update_gradients flag in reinit call.")
         return self.shape_gradients[i] * factor
 
-    def JxW(self, q_index):
+    def JxW(self, q_index) -> float:
         """
-
-        :param q_index:
+        Return the weight for this quadrature point.
+        :param q_index: index of the quadrature point on this cell.
         :return:
         """
-        # TODO denne må nok tilpasses de Barycentriske koordinatene!!!
-        raise NotImplementedError()
+        return self.quadrature.weights[q_index]
