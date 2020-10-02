@@ -141,8 +141,6 @@ class FE_Values:
         global_index = self.local2global[i]
         if self.is_boundary[global_index] and self.is_dirichlet(
                 self.points[global_index]):
-            # print("bdd and dirichlet", global_index, self.points[
-            # global_index])
             # TODO this test strongly assumes linear shape functions.
             factor = 0
 

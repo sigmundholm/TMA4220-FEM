@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from fem.fe_values import FE_Values
 from fem.fe_q import FE_Q
 from fem.function import Function
-from fem.plotting import plot_mesh
+from fem.plotting import plot_mesh, plot_solution
 from fem.supplied import getdisc
 from fem.quadrature_lib import QGauss
 
@@ -97,17 +97,8 @@ class Poisson:
                     # poisson med f=1.
                     val = fe_values.shape_value(i, q_index) * rhs.value(x_q) \
                           * fe_values.JxW(q_index)
-                    print("integral", val)
-                    shape_val = fe_values.shape_value(i, q_index)
-                    if shape_val < 0 or shape_val > 1:
-                        print("shape-val", shape_val)
-                    else:
-                        print("ok")
                     self.system_rhs[fe_values.local2global[i]] += val
 
-        # print(self.points)
-        print(self.system_matrix)
-        print(self.system_rhs)
         # TODO this fixes so the matrix is invertible, but could just have
         # removed those dofs that are not a dof from the matrix, so this
         # wouldn't be needed. Would then have to set boundary values in a
@@ -116,6 +107,8 @@ class Poisson:
         for i, point in enumerate(self.points):
             if fe_values.is_boundary[i] and Poisson.is_dirichlet(point):
                 self.system_matrix[i, i] = 1
+                # TODO this doesn't implement lifting functions, so this
+                # only works with homogeneous dirichlet boundary conditions.
                 self.system_rhs[i] = boundary_values.value(point)
 
     def set_boundary_conditions(self):
@@ -133,12 +126,9 @@ class Poisson:
         self.assemble_system()
         self.solve()
 
-        plt.imshow(self.system_matrix)
-        plt.show()
-        print("solution")
-        print(self.solution)
+        plot_solution(self.points, self.solution)
 
 
 if __name__ == '__main__':
-    p = Poisson(2, 1, 20)
+    p = Poisson(2, 1, 200)
     p.run()

@@ -1,3 +1,4 @@
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
 from fem.supplied import getdisc
@@ -19,6 +20,22 @@ def plot_mesh(points, triangles, edges):
                     color="black")
 
     return ax
+
+
+def plot_solution(points, solution):
+    X = points[:, 0]
+    Y = points[:, 1]
+    Z = solution
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    ax.scatter(X, Y, Z, c='r')
+    ax.set_xlabel('X Label')
+    ax.set_ylabel('Y Label')
+    ax.set_zlabel('Z Label')
+
+    plt.show()
 
 
 if __name__ == '__main__':
