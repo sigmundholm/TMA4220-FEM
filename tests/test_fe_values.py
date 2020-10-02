@@ -84,7 +84,7 @@ class FEValuesTest(unittest.TestCase):
                         self.assertAlmostEqual(
                             value, integral, 3,
                             msg=f"A polynomial of degree {degree} should be "
-                                f"integrated exactly by a gaussian  "
+                                f"integrated exactly by a gaussian "
                                 f"{quad_degree} point quadrature.")
                     else:
                         self.assertNotEqual(
@@ -98,7 +98,15 @@ class FEValuesTest(unittest.TestCase):
             if message:
                 raise AssertionError(message)
 
-
-def test_shape_value(self):
-    # TODO
-    pass
+    def test_shape_value(self):
+        for i, shape_func_consts in enumerate(self.fe_values.shape_functions):
+            for j, corner in enumerate(self.triangle_corners):
+                value = shape_func_consts[:2] @ corner + shape_func_consts[2]
+                if i == j:
+                    self.assertAlmostEqual(value, 1, places=10,
+                                           msg="Shape function i should be 1 "
+                                               "in corner i.")
+                else:
+                    self.assertAlmostEqual(value, 0, places=10,
+                                           msg="Shape function i should be 0 "
+                                               "in corner j =! i.")
