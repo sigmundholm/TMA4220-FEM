@@ -71,15 +71,16 @@ class FE_Values:
         """
         self.cell = cell
         self.triangle_corners = self.points[cell]
+        self.shape_functions = []  # Empty the list
+        self.shape_gradients = []  # Empty the list
 
         self.quadrature.reinit(self.triangle_corners)
 
         self.local2global = {loc: glob for loc, glob in zip(range(len(cell)),
                                                             cell)}
 
-        # Create the matrix to find the coefficients for the shape
-        # functions on the current triangle (assumes linear shape
-        # functions).
+        # Create the matrix to find the coefficients for the shape functions
+        # on the current triangle (assumes linear shape functions).
         point_matrix = np.ones((3, 3))
         point_matrix[:, :2] = self.triangle_corners
 
