@@ -30,7 +30,7 @@ class FEValuesTest(unittest.TestCase):
                                    update_gradients=True)
         self.fe_values.reinit(self.triangles[0])
 
-    def test_quadrature_func_on_triangle(self):
+    def test_gauss_degree_of_exactness_on_triangle(self):
         dim = 2
 
         lower_x = 3
@@ -41,34 +41,64 @@ class FEValuesTest(unittest.TestCase):
         triangle_corners = np.array([[0, 0],
                                      [lower_x, lower_y],
                                      [upper_x, upper_y]])
-        print("corners", triangle_corners)
 
-        def func(p):
-            return p[1] ** 3
+        def first_deg(p):
+            return 2 * p[0] + 4 * p[1] - 1
 
-        for quad_degree in [1, 3, 4]:
-            fe_q = FE_Q(dim, degree=1)
-            quadrature = QGauss(dim, quad_degree)
-            fe_values = FE_Values(fe_q, quadrature,
-                                  points=triangle_corners,
-                                  edges=self.edges,
-                                  is_dirichlet=lambda p: False,
-                                  update_values=True,
-                                  update_gradients=True)
-            fe_values.reinit(self.triangles[0])
+        def second_deg(p):
+            return p[0] ** 2 - 2 * p[0] * p[1] - p[1] ** 2 / 2 + 1
 
-            value = 0
-            for q_index in range(quad_degree):
-                x_q = fe_values.quadrature_point(q_index)
-                value += func(x_q) * fe_values.JxW(q_index)
+        def third_deg(p):
+            return 4 * p[1] ** 3 + p[0] ** 2 - 3 * p[1]
 
-            print("integral-degre", quad_degree, "val", value)
+        message = ""
 
-        res = dblquad(lambda x, y: func([y, x]), 0, lower_x,
-                      lambda x: lower_y / lower_x * x,
-                      lambda x: upper_y / upper_x * x)
-        print("INTEGRATED:", res)
+        for func, degree in [(first_deg, 1), (second_deg, 2), (third_deg, 3)]:
+            print("\nFunc", func.__name__)
+            integral = dblquad(lambda x, y: func([y, x]), 0, lower_x,
+                               lambda x: lower_y / lower_x * x,
+                               lambda x: upper_y / upper_x * x)[0]
+            print("INTEGRATED:", integral)
 
-    def test_shape_value(self):
-        # TODO
-        pass
+            for quad_degree in [1, 3, 4]:
+                fe_q = FE_Q(dim, degree=1)
+                quadrature = QGauss(dim, quad_degree)
+                fe_values = FE_Values(fe_q, quadrature,
+                                      points=triangle_corners,
+                                      edges=self.edges,
+                                      is_dirichlet=lambda p: False,
+                                      update_values=True,
+                                      update_gradients=True)
+                fe_values.reinit(self.triangles[0])
+
+                value = 0
+                for q_index in range(quad_degree):
+                    x_q = fe_values.quadrature_point(q_index)
+                    value += func(x_q) * fe_values.JxW(q_index)
+
+                print("gauss points", quad_degree, "polydeg", degree,
+                      "value", value)
+
+                try:
+                    if degree <= 2 * quad_degree - 1:
+                        self.assertAlmostEqual(
+                            value, integral, 3,
+                            msg=f"A polynomial of degree {degree} should be "
+                                f"integrated exactly by a gaussian  "
+                                f"{quad_degree} point quadrature.")
+                    else:
+                        self.assertNotEqual(
+                            value, integral,
+                            msg=f"{quad_degree} point Gauss should not handle "
+                                f"polynomial of degree {degree}.")
+
+                except AssertionError as e:
+                    message += f"\n{e}"
+
+            if message:
+                raise AssertionError(message)
+
+
+def test_shape_value(self):
+    # TODO
+    pass
