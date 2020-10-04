@@ -43,8 +43,9 @@ class QGauss:
         self.triangle_corners = points
         a, d = points[1] - points[0]
         b, e = points[2] - points[0]
-        # jacobi determinant times 0.5 just because
-        self.jacobi_determinant = (a * e - b * d) * 0.5
+        # Jacobi determinant times 0.5 just because
+        magic = 0.5
+        self.jacobi_determinant = np.abs(a * e - b * d) * magic
 
     def quadrature_point(self, q_index: int):
         """
