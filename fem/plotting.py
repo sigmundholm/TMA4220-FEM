@@ -22,20 +22,24 @@ def plot_mesh(points, triangles, edges):
     return ax
 
 
-def plot_solution(points, solution):
-    X = points[:, 0]
-    Y = points[:, 1]
-    Z = solution
-
+def plot_solution(points, solution, triangles, color="blue"):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
-    ax.scatter(X, Y, Z, c='r')
-    ax.set_xlabel('X Label')
-    ax.set_ylabel('Y Label')
-    ax.set_zlabel('Z Label')
+    for triangle in triangles:
+        corners = list(points[triangle])
+        corners.append(corners[0])
 
-    plt.show()
+        zs = list(solution[triangle].flatten())
+        zs.append(zs[0])
+
+        xs, ys = list(zip(*corners))
+        plt.plot(xs, ys, zs, color=color)
+
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('u(x, y)')
+    return ax
 
 
 if __name__ == '__main__':

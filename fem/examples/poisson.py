@@ -31,15 +31,20 @@ class Poisson:
     system_rhs = None
     solution = None
 
-    def __init__(self, dim, degree, num_triangles):
+    def __init__(self, dim, degree, num_triangles, RHS):
         self.dim = dim
         self.degree = degree
         self.num_triangles = num_triangles
 
+        self.RHS = RHS
         self.fe = FE_Q(dim, degree)
 
     def make_grid(self):
+        print("Make grid")
         points, triangles, edges = getdisc.get_disk(self.num_triangles)
+        # TODO med firkant som mesh funker ikke dirichlet på bdd.
+        from fem.supplied import getplate
+        # points, triangles, edges = getplate.get_plate(self.num_triangles)
         self.points = points
         self.triangles = triangles
         self.edges = edges
@@ -47,6 +52,7 @@ class Poisson:
         plt.show()
 
     def setup_system(self):
+        print("Setup system")
         self.n_dofs = len(self.points)
 
         self.system_matrix = np.zeros((self.n_dofs, self.n_dofs))
@@ -62,11 +68,12 @@ class Poisson:
         Set up the stiffness matrix.
         :return:
         """
-        guass = QGauss(dim=self.dim, degree=self.degree)
+        print("Assemble system")
+        guass = QGauss(dim=self.dim, degree=3)
         fe_values = FE_Values(self.fe, guass, self.points, self.edges,
                               Poisson.is_dirichlet, update_gradients=True)
 
-        rhs = RightHandSide()
+        rhs = self.RHS()
         boundary_values = BoundaryValues()
 
         for triangle in self.triangles:
@@ -80,11 +87,9 @@ class Poisson:
             fe_values.reinit(triangle)
 
             for q_index in fe_values.quadrature_point_indices():
-                print("q index", q_index)
                 x_q = fe_values.quadrature_point(q_index)
 
                 for i in fe_values.dof_indices():
-                    print()
                     for j in fe_values.dof_indices():
                         res = fe_values.shape_grad(i, q_index) \
                               @ fe_values.shape_grad(j, q_index) \
@@ -115,6 +120,7 @@ class Poisson:
         pass
 
     def solve(self):
+        print("Solve")
         self.solution = np.linalg.solve(self.system_matrix, self.system_rhs)
 
     def output_results(self):
@@ -126,9 +132,11 @@ class Poisson:
         self.assemble_system()
         self.solve()
 
-        plot_solution(self.points, self.solution)
+        ax = plot_solution(self.points, self.solution, self.triangles)
+        ax.set_title("numerical solution")
+        plt.show()
 
 
 if __name__ == '__main__':
-    p = Poisson(2, 1, 200)
+    p = Poisson(2, 1, 200, RightHandSide)
     p.run()
