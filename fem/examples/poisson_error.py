@@ -6,6 +6,7 @@ from fem.examples.poisson import Poisson
 from fem.fe_values import FE_Values
 from fem.function import Function
 from fem.quadrature_lib import QGauss
+from fem.triangle import Cell
 
 from fem.plotting import plot_solution
 
@@ -38,7 +39,8 @@ class PoissonError(Poisson):
 
         l2_error = 0
         for triangle in self.triangles:
-            fe_values.reinit(triangle)
+            cell = Cell(self.dim, triangle)
+            fe_values.reinit(cell)
 
             for q_index in fe_values.quadrature_point_indices():
 

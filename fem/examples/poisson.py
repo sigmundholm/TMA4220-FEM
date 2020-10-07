@@ -6,6 +6,7 @@ from fem.fe_q import FE_Q
 from fem.function import Function
 from fem.plotting import plot_mesh, plot_solution
 from fem.supplied import getdisc
+from fem.triangle import Cell
 from fem.quadrature_lib import QGauss
 
 
@@ -80,11 +81,9 @@ class Poisson:
             # Nå er vi i en celle
             # lar indeksen i punktlista være den globale nummereringen til
             # shape funksjoner
-
-            # TODO pass på ikke ha shape funksjoner på de kantene langs
-            # randen der det skal være dirichlet.
-
-            fe_values.reinit(triangle)
+            # TODO build this initialization into the for-loop.
+            cell = Cell(self.dim, triangle)
+            fe_values.reinit(cell)
 
             for q_index in fe_values.quadrature_point_indices():
                 x_q = fe_values.quadrature_point(q_index)
@@ -93,22 +92,19 @@ class Poisson:
                     for j in fe_values.dof_indices():
                         res = fe_values.shape_grad(i, q_index) \
                               @ fe_values.shape_grad(j, q_index) \
-                              * fe_values.JxW(q_index)
+                              * fe_values.JxW(q_index)  # (∇u_i, ∇v_j)
 
                         self.system_matrix[fe_values.local2global[i],
                                            fe_values.local2global[j]] += res
 
-                    # TODO pass på det dette integralet er positivt for
-                    # poisson med f=1.
                     val = fe_values.shape_value(i, q_index) * rhs.value(x_q) \
-                          * fe_values.JxW(q_index)
+                          * fe_values.JxW(q_index)  # (v_i, f)
                     self.system_rhs[fe_values.local2global[i]] += val
 
         # TODO this fixes so the matrix is invertible, but could just have
         # removed those dofs that are not a dof from the matrix, so this
         # wouldn't be needed. Would then have to set boundary values in a
         # different way after the system is solved.
-
         for i, point in enumerate(self.points):
             if fe_values.is_boundary[i] and Poisson.is_dirichlet(point):
                 self.system_matrix[i, i] = 1

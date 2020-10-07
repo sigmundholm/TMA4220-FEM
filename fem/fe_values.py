@@ -2,11 +2,11 @@ import numpy as np
 
 from fem.fe_q import FE_Q
 from fem.quadrature_lib import QGauss
+from fem.triangle import Cell, Face
 
 
 class FE_Values:
-    cell = None
-    triangle_corners = None
+    cell: Cell = None
 
     # List of the constants describing the shape functions that are nonzero
     # on this cell. The functions are linear and on the form
@@ -40,7 +40,9 @@ class FE_Values:
         self.fe = fe
         self.quadrature: QGauss = quadrature
 
-        self.points = points  # TODO not in original dealii function
+        # TODO these arguments are not in original dealii function, this is
+        # handled in FE_Q
+        self.points = points
         self.edges = edges
 
         # Create a map to tell if a dof-index points to a vertex on the
@@ -52,6 +54,9 @@ class FE_Values:
             except KeyError:
                 self.is_boundary[i] = False
 
+        # TODO this is a nasty quickfix
+        Face.vertex_at_boundary = self.is_boundary
+
         self.is_dirichlet = is_dirichlet
 
         # Flags for what to update when running FEValues.reinit(cell)
@@ -61,7 +66,7 @@ class FE_Values:
         # self.update_normal_vectors = update_normal_vectors
         # self.update_JxW_values = update_JxW_values
 
-    def reinit(self, cell):
+    def reinit(self, cell: Cell):
         """
         Do the necessary preparations for doing the calculations on the provided
         cell, when the next functions are called.
@@ -69,22 +74,23 @@ class FE_Values:
         the corners of this cell.
         :return:
         """
-        self.cell = cell
-        self.triangle_corners = self.points[cell]
+        self.cell: Cell = cell
+        triangle_corners = self.points[cell.corner_indices]
         self.shape_functions = []  # Empty the list
         self.shape_gradients = []  # Empty the list
 
-        self.quadrature.reinit(self.triangle_corners)
+        self.quadrature.reinit(triangle_corners)
 
-        self.local2global = {loc: glob for loc, glob in zip(range(len(cell)),
-                                                            cell)}
+        self.local2global = {loc: glob for loc, glob in
+                             zip(range(len(cell.corner_indices)),
+                                 cell.corner_indices)}
 
         # Create the matrix to find the coefficients for the shape functions
         # on the current triangle (assumes linear shape functions).
         point_matrix = np.ones((3, 3))
-        point_matrix[:, :2] = self.triangle_corners
+        point_matrix[:, :2] = triangle_corners
 
-        for index, k in enumerate(cell):
+        for index, k in enumerate(cell.corner_indices):
             rhs = np.zeros(3)
             rhs[index] = 1
             plane_consts = np.linalg.solve(point_matrix, rhs)
@@ -94,14 +100,14 @@ class FE_Values:
         if self.update_gradients:
             if self.shape_gradients is None:
                 self.shape_gradients = []
-            for i in range(len((self.cell))):
+            for i in range(len(self.cell.corner_indices)):
                 self.shape_gradients.append(self.shape_functions[i][:2])
 
     def quadrature_point_indices(self):
         return list(range(self.quadrature.degree))
 
     def dof_indices(self):
-        return list(range(len(self.cell)))
+        return list(range(len(self.cell.corner_indices)))
 
     def quadrature_point(self, q_index):
         """
@@ -117,7 +123,6 @@ class FE_Values:
         :param q_index: local quadrature point index
         :return:
         """
-        # TODO denne er feil
         x_q = self.quadrature_point(q_index)
         if self.is_boundary[self.local2global[i]] and self.is_dirichlet(x_q):
             return 0
