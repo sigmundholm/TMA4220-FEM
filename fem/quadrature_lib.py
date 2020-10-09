@@ -2,7 +2,8 @@ import numpy as np
 
 from fem.quadrature import quadrature2D
 
-# This is quadrature points and weights for Gaussian quadrature in 1D.
+# This is quadrature points and weights for Gaussian quadrature in 1D,
+# on the form (quadrature_point in on [-1, 1], weights)
 ONE_DIM_GAUSS = [[[0], [2]],  # 1-point rule
                  [[-np.sqrt(1 / 3), np.sqrt(1 / 3)], [1, 1]],  # 2-point
                  [[-np.sqrt(3 / 5), 0, np.sqrt(3 / 5)],  # 3-point

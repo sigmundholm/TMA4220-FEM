@@ -71,7 +71,7 @@ class Poisson:
         """
         print("Assemble system")
         guass = QGauss(dim=self.dim, degree=3)
-        fe_values = FE_Values(self.fe, guass, self.points, self.edges,
+        fe_values = FEValues(self.fe, guass, self.points, self.edges,
                               Poisson.is_dirichlet, update_gradients=True)
 
         rhs = self.RHS()

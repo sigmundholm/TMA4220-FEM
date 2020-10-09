@@ -2,9 +2,13 @@ import numpy as np
 
 
 class Face:
-    # This is set as a static variable in FEValues.__init__
+    # This is set as a static variable in FEValuesBase.__init__.
     # TODO do something less hacky
     vertex_at_boundary: dict = None
+
+    # A list of all the points in the mesh. This is set as a static variable
+    # in FEValuesBase.__init__.
+    points = []
 
     def __init__(self, dim, edge_indices):
         self.dim = dim
@@ -18,9 +22,14 @@ class Face:
 
 
 class Cell:
+    # A list of all the points in the mesh. This is set as a static variable
+    # in FEValuesBase.__init__.
+    points = []
+
     def __init__(self, dim, corner_indices):
         self.dim = dim
         self.corner_indices = corner_indices
+        self.corner_points = self.points[corner_indices]
 
     def face_iterators(self) -> [Face]:
         # Create list of tuples of all the pairs constituting the edges of

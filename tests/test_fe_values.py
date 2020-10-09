@@ -3,9 +3,10 @@ import unittest
 import numpy as np
 from scipy.integrate import dblquad
 
-from fem.fe_values import FE_Values
+from fem.fe_values import FEValues
 from fem.fe_q import FE_Q
 from fem.quadrature_lib import QGauss
+from fem.triangle import Cell
 
 
 class FEValuesTest(unittest.TestCase):
@@ -22,13 +23,14 @@ class FEValuesTest(unittest.TestCase):
 
         fe_q = FE_Q(dim, degree)
         quadrature = QGauss(dim, quad_degree)
-        self.fe_values = FE_Values(fe_q, quadrature,
-                                   points=self.triangle_corners,
-                                   edges=self.edges,
-                                   is_dirichlet=lambda p: False,
-                                   update_values=True,
-                                   update_gradients=True)
-        self.fe_values.reinit(self.triangles[0])
+        self.fe_values = FEValues(fe_q, quadrature,
+                                  points=self.triangle_corners,
+                                  edges=self.edges,
+                                  is_dirichlet=lambda p: False,
+                                  update_values=True,
+                                  update_gradients=True)
+        cell = Cell(dim, self.triangles[0])
+        self.fe_values.reinit(cell)
 
     def test_gauss_degree_of_exactness_on_triangle(self):
         dim = 2
@@ -63,13 +65,14 @@ class FEValuesTest(unittest.TestCase):
             for quad_degree in [1, 3, 4]:
                 fe_q = FE_Q(dim, degree=1)
                 quadrature = QGauss(dim, quad_degree)
-                fe_values = FE_Values(fe_q, quadrature,
-                                      points=triangle_corners,
-                                      edges=self.edges,
-                                      is_dirichlet=lambda p: False,
-                                      update_values=True,
-                                      update_gradients=True)
-                fe_values.reinit(self.triangles[0])
+                fe_values = FEValues(fe_q, quadrature,
+                                     points=triangle_corners,
+                                     edges=self.edges,
+                                     is_dirichlet=lambda p: False,
+                                     update_values=True,
+                                     update_gradients=True)
+                cell = Cell(dim, self.triangles[0])
+                fe_values.reinit(cell)
 
                 value = 0
                 for q_index in range(quad_degree):
@@ -99,7 +102,8 @@ class FEValuesTest(unittest.TestCase):
                 raise AssertionError(message)
 
     def test_shape_value(self):
-        for i, shape_func_consts in enumerate(self.fe_values.shape_functions):
+        for i, shape_func_consts in enumerate(
+                self.fe_values.fe.shape_functions):
             for j, corner in enumerate(self.triangle_corners):
                 value = shape_func_consts[:2] @ corner + shape_func_consts[2]
                 if i == j:

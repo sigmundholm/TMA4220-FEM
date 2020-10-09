@@ -10,6 +10,14 @@ class Function:
         """
         raise NotImplementedError()
 
+    def gradient(self, p, value=None):
+        """
+        :param p: the point to evaluate the gradient of the function in.
+        :param value:
+        :return:
+        """
+        raise NotImplementedError()
+
     def value_list(self, points):
         """
         :param points: a list of points to evaluate the function in
