@@ -78,11 +78,11 @@ class Poisson:
         :return:
         """
         print("Assemble system")
-        guass = QGauss(dim=self.dim, degree=3)
-        fe_values = FEValues(self.fe, guass, self.points, self.edges,
+        gauss = QGauss(dim=self.dim, degree=4)
+        fe_values = FEValues(self.fe, gauss, self.points, self.edges,
                              self.is_dirichlet, update_gradients=True)
 
-        face_gauss = QGauss(dim=self.dim - 1, degree=1)
+        face_gauss = QGauss(dim=self.dim - 1, degree=4)
         fe_face_values = FEFaceValues(self.fe, face_gauss, self.points,
                                       self.edges, self.is_dirichlet)
 
