@@ -54,7 +54,8 @@ class Poisson:
 
     def make_grid(self):
         print("Make grid")
-        points, triangles, edges = getdisc.get_disk(self.num_triangles)
+        points, triangles, edges = getdisc.get_disk(self.num_triangles,
+                                                    dim=self.dim)
         # TODO med firkant som mesh funker ikke dirichlet på bdd.
         from fem.supplied import getplate
         # points, triangles, edges = getplate.get_plate(self.num_triangles)

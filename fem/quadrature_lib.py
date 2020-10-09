@@ -58,7 +58,10 @@ class QGauss:
         self.dim = dim
         self.degree = degree
 
-        if dim == 1:
+        if dim == 0:
+            pass
+
+        elif dim == 1:
             if self.degree > len(ONE_DIM_GAUSS):
                 raise NotImplementedError("Need more quadrature points and "
                                           "weights for 1D gauss of degree " +

@@ -1,12 +1,16 @@
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+import numpy as np
 
 from fem.supplied import getdisc
 
 
 def plot_mesh(points, triangles, edges):
     xs = points[:, 0]
-    ys = points[:, 1]
+    try:
+        ys = points[:, 1]
+    except IndexError:
+        ys = np.zeros(len(xs))
 
     fig, ax = plt.subplots()
 
@@ -16,8 +20,10 @@ def plot_mesh(points, triangles, edges):
     for triangle in triangles:
         for edge in zip(triangle, list(triangle[1:]) + list([triangle[0]])):
             # TODO very slow..
-            ax.plot(points[edge, 0], points[edge, 1],
-                    color="black")
+            try:
+                ax.plot(points[edge, 0], points[edge, 1], color="black")
+            except IndexError:
+                ax.plot(points[edge, 0], [0, 0], color="black")
 
     return ax
 

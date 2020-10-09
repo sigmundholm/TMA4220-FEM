@@ -17,7 +17,24 @@ import numpy as np
 import scipy.spatial as spsa
 
 
-def get_disk(N):
+def get_disk(N, dim=2):
+    if dim == 1:
+        return get_disk_1d(N)
+    if dim == 2:
+        return get_disk_2d(N)
+    else:
+        raise NotImplementedError()
+
+
+def get_disk_1d(N):
+    values = np.linspace(-1, 1, N + 1)
+    points = values.reshape((-1, 1))
+    triangles = np.array(list(zip(range(len(values)), range(1, len(values)))))
+    edge = np.array([[0], [len(values) - 1]])
+    return points, triangles, edge
+
+
+def get_disk_2d(N):
     # Controlling the input.
     if N < 4:
         print("Error. N >= 4 reguired for input.")
