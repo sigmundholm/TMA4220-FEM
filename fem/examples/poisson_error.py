@@ -23,10 +23,17 @@ class RightHandSide(Function):
                * np.sin(2 * np.pi * r_sq)
 
 
+class NeumannBoundaryValues(Function):
+    def value(self, p):
+        r_sq = (p ** 2).sum()
+        return 4 * np.pi * np.sqrt(r_sq) * np.cos(2 * np.pi * r_sq)
+
+
 class PoissonError(Poisson):
-    def __init__(self, dim, degree, num_triangles, RHS, is_dirichlet,
+    def __init__(self, dim, degree, num_triangles, RHS, NeumannBD, is_dirichlet,
                  AnalyticalSoln):
-        super().__init__(dim, degree, num_triangles, RHS, is_dirichlet)
+        super().__init__(dim, degree, num_triangles, RHS, NeumannBD,
+                         is_dirichlet)
         self.AnalyticalSoln = AnalyticalSoln
 
     def compute_error(self):
@@ -86,5 +93,18 @@ class PoissonError(Poisson):
 
 
 if __name__ == '__main__':
-    p = PoissonError(2, 1, 200, RightHandSide, AnalyticalSolution)
+    def is_dirichlet(p: np.ndarray):
+        return True
+
+
+    def half_dirichlet(p: np.ndarray):
+        return p[1] <= 0
+
+
+    # p = PoissonError(2, 1, 400, RightHandSide, is_dirichlet,
+    # AnalyticalSolution)
+    # p.run()
+
+    p = PoissonError(2, 1, 400, RightHandSide, NeumannBoundaryValues,
+                     half_dirichlet, AnalyticalSolution)
     p.run()

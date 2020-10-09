@@ -72,7 +72,7 @@ class QGaussTest(unittest.TestCase):
                     value += func * gauss.weights[q_index] * gauss.jacobian()
                 exact_value = np.abs(points[1][0] - points[0][0])
 
-                self.assertAlmostEqual(value, exact_value, places=10,
+                self.assertAlmostEqual(value, exact_value, places=9,
                                        msg="Not integrating a constant "
                                            "correctly in one space dim. "
                                            "Points = " + str(points))
@@ -94,7 +94,7 @@ class QGaussTest(unittest.TestCase):
                 delta_x, delta_y = points[1] - points[0]
                 exact_value = np.sqrt(delta_x ** 2 + delta_y ** 2)
 
-                self.assertAlmostEqual(value, exact_value, places=10,
+                self.assertAlmostEqual(value, exact_value, places=9,
                                        msg="Not integrating a constant "
                                            "correctly in one space dim. "
                                            "Points = " + str(points))
@@ -126,7 +126,7 @@ class QGaussTest(unittest.TestCase):
 
                     if poly_deg <= 2 * degree - 1:
                         self.assertAlmostEqual(
-                            value, exact_value, places=10,
+                            value, exact_value, places=9,
                             msg=f"Expect {degree} point Gauss to integrate "
                                 f"{poly_deg}. degree polynom exactly."
                                 "Points = " + str(points))

@@ -37,12 +37,14 @@ class Poisson:
     system_rhs = None
     solution = None
 
-    def __init__(self, dim, degree, num_triangles, RHS, is_dirichlet: callable):
+    def __init__(self, dim, degree, num_triangles, RHS, NeumannBD,
+                 is_dirichlet: callable):
         self.dim = dim
         self.degree = degree
         self.num_triangles = num_triangles
 
         self.RHS = RHS
+        self.NeumannBD = NeumannBD
         self.fe = FE_Q(dim, degree)
 
         # A function taking a point (np.ndarray) as argument, and returning
@@ -86,7 +88,7 @@ class Poisson:
         rhs = self.RHS()
         # TODO only homogeneous Dirichlet supperted
         boundary_values = BoundaryValues()
-        neumann_bdd_values = NeumannBoundaryValues()
+        neumann_bdd_values = self.NeumannBD()
 
         for triangle in self.triangles:
             # Nå er vi i en celle
@@ -164,5 +166,5 @@ if __name__ == '__main__':
         return p[1] <= 0
 
 
-    p = Poisson(2, 1, 200, RightHandSide, is_dirichlet)
+    p = Poisson(2, 1, 200, RightHandSide, NeumannBoundaryValues, is_dirichlet)
     p.run()
