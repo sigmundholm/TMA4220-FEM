@@ -84,14 +84,18 @@ class FEValuesBase:
         """
         return self.quadrature.quadrature_point(q_index)
 
-    def shape_value(self, i, q_index):
+    def shape_value(self, i, q_index) -> float:
         """
         Return the value of shape function i evaluated in quadrature point q.
         :param i: global index
         :param q_index: local quadrature point index
         :return:
         """
-        raise NotImplementedError()
+        x_q = self.quadrature_point(q_index)
+        if self.is_boundary[self.local2global[i]] and self.is_dirichlet(x_q):
+            return 0
+
+        return self.fe.shape_value(i, x_q)
 
     def shape_grad(self, i, q_index):
         """
@@ -105,7 +109,14 @@ class FEValuesBase:
         shape functions
         :return:
         """
-        raise NotImplementedError()
+        factor = 1
+        global_index = self.local2global[i]
+        if self.is_boundary[global_index] and \
+                self.is_dirichlet(self.points[global_index]):
+            # TODO this test strongly assumes linear shape functions.
+            factor = 0
+
+        return self.fe.shape_grad(i) * factor
 
     def JxW(self, q_index) -> float:
         """
@@ -132,23 +143,6 @@ class FEValues(FEValuesBase):
         # The quadrature should integrate over the whole cell.
         self.quadrature.reinit(cell.corner_points)
 
-    def shape_value(self, i, q_index) -> float:
-        x_q = self.quadrature_point(q_index)
-        if self.is_boundary[self.local2global[i]] and self.is_dirichlet(x_q):
-            return 0
-
-        return self.fe.shape_value(i, x_q)
-
-    def shape_grad(self, i, q_index) -> np.ndarray:
-        factor = 1
-        global_index = self.local2global[i]
-        if self.is_boundary[global_index] and \
-                self.is_dirichlet(self.points[global_index]):
-            # TODO this test strongly assumes linear shape functions.
-            factor = 0
-
-        return self.fe.shape_grad(i) * factor
-
 
 class FEFaceValues(FEValuesBase):
 
@@ -156,8 +150,4 @@ class FEFaceValues(FEValuesBase):
         super(FEFaceValues, self).reinit(cell)
 
         # The quadrature should integrate over a face of the cell.
-        self.quadrature.reinit(self.cell.corner_points)
-
-    def shape_value(self, i, q_index):
-        x_q = self.quadrature.quadrature_point(q_index)
-        self.fe.shape_value(i, x_q)
+        self.quadrature.reinit(face.edge_points)

@@ -13,6 +13,7 @@ class Face:
     def __init__(self, dim, edge_indices):
         self.dim = dim
         self.edge_indices = edge_indices
+        self.edge_points = self.points[edge_indices]
 
     def at_boundary(self):
         # If all the points of this face is on the boundary, this face is on

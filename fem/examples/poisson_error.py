@@ -2,8 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from fem.examples.poisson import Poisson
-
-from fem.fe_values import FE_Values
+from fem.fe_values import FEValues
 from fem.function import Function
 from fem.quadrature_lib import QGauss
 from fem.triangle import Cell
@@ -25,8 +24,9 @@ class RightHandSide(Function):
 
 
 class PoissonError(Poisson):
-    def __init__(self, dim, degree, num_triangles, RHS, AnalyticalSoln):
-        super().__init__(dim, degree, num_triangles, RHS)
+    def __init__(self, dim, degree, num_triangles, RHS, is_dirichlet,
+                 AnalyticalSoln):
+        super().__init__(dim, degree, num_triangles, RHS, is_dirichlet)
         self.AnalyticalSoln = AnalyticalSoln
 
     def compute_error(self):
@@ -34,8 +34,8 @@ class PoissonError(Poisson):
         analytical_soln: Function = self.AnalyticalSoln()
 
         guass = QGauss(dim=self.dim, degree=self.degree)
-        fe_values = FE_Values(self.fe, guass, self.points, self.edges,
-                              Poisson.is_dirichlet, update_gradients=True)
+        fe_values = FEValues(self.fe, guass, self.points, self.edges,
+                             self.is_dirichlet, update_gradients=True)
 
         l2_error = 0
         for triangle in self.triangles:

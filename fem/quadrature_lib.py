@@ -103,6 +103,8 @@ class QGauss:
                 # so we need a new change of variable from ds to dx. This is
                 # just multiplied together with the jacobi determinant.
                 delta_x, delta_y = points[1] - points[0]
+                # TODO this crashes when the points have the same
+                # x-coordinate. Must then do the integration over y.
                 line_inc = delta_y / delta_x
                 ds = np.sqrt(1 + line_inc ** 2)
             else:
@@ -125,6 +127,10 @@ class QGauss:
         :param q_index: index of the quadrature point.
         :return: a vector of dimension dim.
         """
+        if len(self.domain_corners) == 0:
+            raise ValueError("Need to run reinit before doing calculations "
+                             "on a cell.")
+
         if self.dim == 0:
             # TODO Integrate over just a single point, so no gauss (just for
             # solving 1D PDE problems).
