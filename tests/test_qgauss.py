@@ -130,3 +130,18 @@ class QGaussTest(unittest.TestCase):
                             msg=f"Expect {degree} point Gauss to integrate "
                                 f"{poly_deg}. degree polynom exactly."
                                 "Points = " + str(points))
+
+    def test_jacobi_determinant(self):
+        gauss = QGauss(dim=2, degree=3)
+        for points in np.random.random(6 * 10).reshape(-1, 3, 2):
+            points *= 10
+            p1, p2, p3 = points
+            gauss.reinit(points)
+
+            l1 = p2 - p1
+            l2 = p3 - p1
+            cross_prod = l1[0] * l2[1] - l1[1] * l2[0]  # In z-direction
+            length_cross_prod = abs(cross_prod)
+            area = 0.5 * length_cross_prod
+
+            self.assertAlmostEqual(gauss.jacobian(), area, places=10)

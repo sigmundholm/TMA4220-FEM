@@ -58,7 +58,7 @@ class PoissonError(Poisson):
         h1_diff_integral = 0
         for triangle in self.triangles:
             cell = Cell(self.dim, triangle)
-            fe_values.reinit(cell, )
+            fe_values.reinit(cell)
 
             for q_index in fe_values.quadrature_point_indices():
 
@@ -67,7 +67,7 @@ class PoissonError(Poisson):
                 # Interpolate the solution value and gradient in the quadrature
                 # point.
                 for i in fe_values.dof_indices():
-                    global_index = fe_values.local2global[q_index]
+                    global_index = fe_values.local2global[i]
                     numerical_sol += self.solution[global_index] \
                                      * fe_values.shape_value(i, q_index)
 
@@ -131,10 +131,10 @@ if __name__ == '__main__':
         return p[1] <= 0
 
 
-    p = PoissonError(2, 1, 400, RightHandSide, NeumannBoundaryValues,
+    p = PoissonError(2, 4, 400, RightHandSide, NeumannBoundaryValues,
                      is_dirichlet, AnalyticalSolution)
     p.run()
 
-    p = PoissonError(2, 1, 400, RightHandSide, NeumannBoundaryValues,
+    p = PoissonError(2, 4, 400, RightHandSide, NeumannBoundaryValues,
                      half_dirichlet, AnalyticalSolution)
     p.run()

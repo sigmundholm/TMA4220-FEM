@@ -40,7 +40,7 @@ def plot_solution(points, solution, triangles, color="blue"):
         zs.append(zs[0])
 
         xs, ys = list(zip(*corners))
-        plt.plot(xs, ys, zs, color=color)
+        plt.plot(xs, ys, zs, color=color, linewidth=1)
 
     ax.set_xlabel('x')
     ax.set_ylabel('y')
