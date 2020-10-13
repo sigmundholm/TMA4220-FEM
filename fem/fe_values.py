@@ -87,12 +87,14 @@ class FEValuesBase:
     def shape_value(self, i, q_index) -> float:
         """
         Return the value of shape function i evaluated in quadrature point q.
-        :param i: global index
+        :param i: local shape function index
         :param q_index: local quadrature point index
         :return:
         """
         x_q = self.quadrature_point(q_index)
-        if self.is_boundary[self.local2global[i]] and self.is_dirichlet(x_q):
+        global_index = self.local2global[i]
+        shape_center = self.points[global_index]
+        if self.is_boundary[global_index] and self.is_dirichlet(shape_center):
             return 0
 
         return self.fe.shape_value(i, x_q)
@@ -111,8 +113,8 @@ class FEValuesBase:
         """
         factor = 1
         global_index = self.local2global[i]
-        if self.is_boundary[global_index] and \
-                self.is_dirichlet(self.points[global_index]):
+        shape_center = self.points[global_index]
+        if self.is_boundary[global_index] and self.is_dirichlet(shape_center):
             # TODO this test strongly assumes linear shape functions.
             factor = 0
 
