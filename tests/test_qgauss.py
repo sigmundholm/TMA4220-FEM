@@ -99,6 +99,38 @@ class QGaussTest(unittest.TestCase):
                                            "correctly in one space dim. "
                                            "Points = " + str(points))
 
+    def test_quadrature_linear_polynomial_one_dim_two_space_dims(self):
+        """ Check it can integrate the area under a linear polynomial in 2D,
+        ie. integrate a 1D integral, in two dimensions. This is the surface
+        integral. """
+        # Assert the plane is positive
+        func = lambda x: (3 * x[0] + 4 * x[1] - 3) * 100
+
+        for degree in range(1, len(ONE_DIM_GAUSS) + 1):
+            for points in np.random.random(4 * 5).reshape(-1, 2, 2):
+                points *= 10
+
+                gauss = QGauss(dim=1, degree=degree)
+                gauss.reinit(points)
+
+                value = 0
+                for q_index in range(degree):
+                    x_q = gauss.quadrature_point(q_index)
+                    value += func(x_q) * gauss.weights[q_index] \
+                             * gauss.jacobian()
+
+                # Calculate the integral as the size of the "trapes" the
+                # linear function forms under it.
+                f1, f2 = func(points[0]), func(points[1])
+                length = np.sqrt(((points[0] - points[1]) ** 2).sum())
+                exact_value = 0.5 * (f1 + f2) * length
+
+                self.assertAlmostEqual(
+                    value, exact_value, places=9,
+                    msg=f"Expect {degree} point Gauss to integrate first "
+                        f"degree polynom exactly."
+                        "Points = " + str(points))
+
     def test_quadrature_polynomial_one_dim_one_space_dim(self):
         """ Check degree of exacness for Gauss quadrature along a line in R^1"""
         poly1 = lambda x: 3 * x + 4
