@@ -57,7 +57,7 @@ class FE_Q:
         point_matrix = np.ones((3, 3))
         point_matrix[:, :2] = self.cell.corner_points
 
-        for index, k in enumerate(self.cell.corner_indices):
+        for index in range(len(self.cell.corner_indices)):
             rhs = np.zeros(3)
             rhs[index] = 1
             plane_consts = np.linalg.solve(point_matrix, rhs)
