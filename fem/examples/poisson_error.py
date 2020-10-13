@@ -50,8 +50,8 @@ class PoissonError(Poisson):
         print("Compute error")
         analytical_soln: Function = self.AnalyticalSoln()
 
-        guass = QGauss(dim=self.dim, degree=self.degree)
-        fe_values = FEValues(self.fe, guass, self.points, self.edges,
+        gauss = QGauss(dim=self.dim, degree=self.degree)
+        fe_values = FEValues(self.fe, gauss, self.points, self.edges,
                              self.is_dirichlet, update_gradients=True)
 
         l2_diff_integral = 0
