@@ -20,7 +20,7 @@ class AnalyticalSolution(Function):
         r_sq = (p ** 2).sum()
         if value is None:
             value = np.zeros(2)
-        kernel = np.sin(2 * np.pi * r_sq)
+        kernel = np.cos(2 * np.pi * r_sq)
         value[0] = 4 * np.pi * p[0] * kernel
         value[1] = 4 * np.pi * p[1] * kernel
         return value
