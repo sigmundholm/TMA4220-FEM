@@ -39,7 +39,7 @@ class QGaussTest(unittest.TestCase):
         for points in point_setups:
             exact_area = triangle_area(points)
 
-            for quad_degree in [1, 3, 4]:
+            for quad_degree in [1, 3, 4, 7]:
                 quadrature = QGauss(dim, quad_degree)
                 quadrature.reinit(points)
 

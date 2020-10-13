@@ -53,6 +53,9 @@ class FEValuesTest(unittest.TestCase):
         def third_deg(p):
             return 4 * p[1] ** 3 + p[0] ** 2 - 3 * p[1]
 
+        # Number of points to max polynomial degree
+        degree_of_exactness = {1: 1, 3: 2, 4: 3, 7: 4}
+
         message = ""
 
         for func, degree in [(first_deg, 1), (second_deg, 2), (third_deg, 3)]:
@@ -62,7 +65,7 @@ class FEValuesTest(unittest.TestCase):
                                lambda x: upper_y / upper_x * x)[0]
             print("INTEGRATED:", integral)
 
-            for quad_degree in [1, 3, 4]:
+            for quad_degree in [1, 3, 4, 7]:
                 fe_q = FE_Q(dim, degree=1)
                 quadrature = QGauss(dim, quad_degree)
                 fe_values = FEValues(fe_q, quadrature,
@@ -83,7 +86,7 @@ class FEValuesTest(unittest.TestCase):
                       "value", value)
 
                 try:
-                    if degree <= 2 * quad_degree - 1:
+                    if degree <= degree_of_exactness[quad_degree]:
                         self.assertAlmostEqual(
                             value, integral, 3,
                             msg=f"A polynomial of degree {degree} should be "
@@ -115,4 +118,5 @@ class FEValuesTest(unittest.TestCase):
                                            msg="Shape function i should be 0 "
                                                "in corner j =! i.")
                 value2 = self.fe_values.fe.shape_value(i, corner)
-                self.assertAlmostEqual(value, value2, msg="value and value2 should be equal")
+                self.assertAlmostEqual(value, value2,
+                                       msg="value and value2 should be equal")

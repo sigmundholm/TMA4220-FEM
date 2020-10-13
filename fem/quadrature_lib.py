@@ -23,6 +23,11 @@ THREE_POINTS = (np.array([[.5, .5, 0], [.5, 0, .5], [0, .5, .5]]),
 FOUR_POINTS = (np.array([[1 / 3, 1 / 3, 1 / 3], [3 / 5, 1 / 5, 1 / 5],
                          [1 / 5, 3 / 5, 1 / 5], [1 / 5, 1 / 5, 3 / 5]]),
                np.array([-9 / 16, 25 / 48, 25 / 48, 25 / 48]))
+SEVEN_POINTS = (np.array([[1, 0, 0], [0.5, 0.5, 0.0], [0, 1, 0],
+                          [0, .5, .5], [0, 0, 1], [0.5, 0, 0.5],
+                          [1 / 3, 1 / 3, 1 / 3]]),
+                np.array([1 / 20, 2 / 15, 1 / 20, 2 / 15, 1 / 20, 2 / 15,
+                          9 / 20]))
 
 
 class QGauss:
@@ -63,9 +68,10 @@ class QGauss:
 
         elif dim == 1:
             if self.degree > len(ONE_DIM_GAUSS):
-                raise NotImplementedError("Need more quadrature points and "
-                                          "weights for 1D gauss of degree " +
-                                          str(degree))
+                print("Need more quadrature points and weights for 1D gauss "
+                      f"of degree {degree}, using {len(ONE_DIM_GAUSS)} "
+                      f"points instead.")
+                self.degree = len(ONE_DIM_GAUSS)
             self.points, self.weights = ONE_DIM_GAUSS[self.degree - 1]
 
         elif dim == 2:
@@ -77,6 +83,8 @@ class QGauss:
                 self.zetas, self.weights = THREE_POINTS
             elif degree == 4:
                 self.zetas, self.weights = FOUR_POINTS
+            elif degree == 7:
+                self.zetas, self.weights = SEVEN_POINTS
             else:
                 raise NotImplementedError()
         else:
