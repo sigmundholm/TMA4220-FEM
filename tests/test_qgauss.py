@@ -163,6 +163,30 @@ class QGaussTest(unittest.TestCase):
                                 f"{poly_deg}. degree polynom exactly."
                                 "Points = " + str(points))
 
+    def test_quadrature_non_polynomial_two_space_dim(self):
+
+        def func(x):
+            return np.log(x[0] + x[1])
+
+        points = np.array([[1, 0], (3, 1), (3, 2)])
+
+        integral = scipy.integrate.dblquad(lambda x, y: func([y, x]), 1, 3,
+                                           lambda x: 0.5 * (x - 1),
+                                           lambda x: x - 1)
+
+        for degree in [1, 3, 4, 7]:
+
+            gauss = QGauss(dim=2, degree=degree)
+            gauss.reinit(points)
+
+            value = 0
+            for q_index in range(degree):
+                x_q = gauss.quadrature_point(q_index)
+                value += func(x_q) * gauss.weights[q_index] \
+                         * gauss.jacobian()
+
+            self.assertAlmostEqual(value, integral[0], places=1)
+
     def test_jacobi_determinant(self):
         gauss = QGauss(dim=2, degree=3)
         for points in np.random.random(6 * 10).reshape(-1, 3, 2):

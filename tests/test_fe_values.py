@@ -53,12 +53,19 @@ class FEValuesTest(unittest.TestCase):
         def third_deg(p):
             return 4 * p[1] ** 3 + p[0] ** 2 - 3 * p[1]
 
+        def four_deg(p):
+            return p[0] ** 4 - third_deg(p)
+
+        def five_deg(p):
+            return p[1] ** 5 - four_deg(p)
+
         # Number of points to max polynomial degree
         degree_of_exactness = {1: 1, 3: 2, 4: 3, 7: 4}
 
         message = ""
 
-        for func, degree in [(first_deg, 1), (second_deg, 2), (third_deg, 3)]:
+        for func, degree in [(first_deg, 1), (second_deg, 2), (third_deg, 3),
+                             (four_deg, 4), (five_deg, 5)]:
             print("\nFunc", func.__name__)
             integral = dblquad(lambda x, y: func([y, x]), 0, lower_x,
                                lambda x: lower_y / lower_x * x,
