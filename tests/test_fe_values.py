@@ -114,3 +114,5 @@ class FEValuesTest(unittest.TestCase):
                     self.assertAlmostEqual(value, 0, places=10,
                                            msg="Shape function i should be 0 "
                                                "in corner j =! i.")
+                value2 = self.fe_values.fe.shape_value(i, corner)
+                self.assertAlmostEqual(value, value2, msg="value and value2 should be equal")
