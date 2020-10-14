@@ -99,9 +99,9 @@ if __name__ == '__main__':
     ns = [50, 100, 200, 400, 800]
     hs = [0.44, 0.29, 0.21, 0.14, 0.10]
     l2_dirichlet = np.array([1.14168252, 0.4044935, 0.19385404, 0.08174407,
-                             0.04315963]) / 1.0788731827251923  # Dirichlet
+                             0.04315963]) / 2.5911  # Dirichlet
     l2_neumann = np.array([1.09804361, 0.46405342, 0.20519723, 0.08935962,
-                           0.04450886]) / 1.0788731827251923  # Neumann
+                           0.04450886]) / 2.5911  # Neumann
     # Neumann
 
     convergence_plot(hs, l2_neumann, yscale="log10", desired_order=2,
@@ -109,42 +109,3 @@ if __name__ == '__main__':
                      ylabel=r"$\|u-u_h\|_{L^2}/\|u\|_{L^2}$",
                      show_conv_order=False)
     plt.show()
-
-    """
-    base = os.getcwd()
-    full_path = os.path.join(base, "build/src/cutfem/convergence/errors-d2o1.csv")
-    data = np.genfromtxt(full_path, delimiter=",")
-
-    skip = 2
-
-    mesh_size = data[:, 0]
-    print("mesh", mesh_size)
-
-    l2_u = data[:, 1]
-    l2_p = data[:, 2]
-    ns = 2 ** np.array(range(len(l2_u)))
-
-    ns = ns[1 + skip:]
-    l2_u = l2_u[1 + skip:]
-    l2_p = l2_p[1 + skip:]
-    print("ns", ns)
-    print("l2_u", l2_u)
-    print("l2_p", l2_p)
-
-    # Velocity plot
-    ns_u = ns
-    print()
-    convergence_plot(ns_u, l2_u, yscale="log2", reference_line_offset=-0.5, xlabel="$N$",
-                     title=r"\textrm{Velocity: Channel with sphere. AnalyticalSolution=0 inside sphere.}",
-                     desired_order=1)
-
-    # Pressure convergence plot
-    pressure_skip = 1
-    ns_p = ns
-    print()
-    convergence_plot(ns_p[pressure_skip:], l2_p[pressure_skip:], yscale="log2", reference_line_offset=1, xlabel="$N$",
-                     title=r"\textrm{Pressure: Channel with sphere. AnalyticalSolution=0 inside sphere.}",
-                     desired_order=1)
-
-    # convergence_plot(ns, errors, yscale="log2", reference_line_offset=0.5)
-    """

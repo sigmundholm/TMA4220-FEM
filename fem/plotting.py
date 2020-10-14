@@ -39,7 +39,7 @@ def plot_mesh2(points, triangles, latex=True):
     plt.triplot(points[:, 0], points[:, 1])
 
 
-def plot_solution(points, solution, triangles, color="blue"):
+def plot_solution_old(points, solution, triangles, color="blue"):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
@@ -59,7 +59,30 @@ def plot_solution(points, solution, triangles, color="blue"):
     return ax
 
 
+def plot_solution(points, solution, triangles, latex=False):
+    if latex:
+        rc('font', **{'family': 'sans-serif', 'sans-serif': ['Helvetica']})
+        # for Palatino and other serif fonts use:
+        # rc('font',**{'family':'serif','serif':['Palatino']})
+        rc('text', usetex=True)
+
+    # Create the Triangulation; no triangles so Delaunay triangulation created.
+    triang = Triangulation(points[:, 0], points[:, 1])
+
+    fig1, ax1 = plt.subplots()
+    ax1.set_aspect('equal')
+    tcf = ax1.tricontourf(triang, solution.flatten())
+    fig1.colorbar(tcf)
+    ax1.set_xlabel("$x$")
+    ax1.set_ylabel("$y$")
+    # ax1.tricontour(triang, z, colors='k')
+    return ax1
+
+
 if __name__ == '__main__':
-    points, tri, edge = getdisc.get_disk(400)
-    plot_mesh2(points, tri)
+    points, tri, edge = getdisc.get_disk(800)
+    # plot_mesh2(points, tri)
+
+    z = np.linspace(-1, 1, len(points))
+    plot_solution(points, z, tri)
     plt.show()
