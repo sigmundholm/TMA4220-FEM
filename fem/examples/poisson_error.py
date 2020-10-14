@@ -126,17 +126,17 @@ class PoissonError(Poisson):
 
 
 if __name__ == '__main__':
+    # Dirichlet on the whole boundary
     def is_dirichlet(p: np.ndarray):
         return True
-
-
-    def half_dirichlet(p: np.ndarray):
-        return p[1] <= 0
-
 
     p = PoissonError(2, 4, 400, RightHandSide, NeumannBoundaryValues,
                      is_dirichlet, AnalyticalSolution)
     p.run()
+
+    # Neumann conditions for y > 0.
+    def half_dirichlet(p: np.ndarray):
+        return p[1] <= 0
 
     p = PoissonError(2, 4, 400, RightHandSide, NeumannBoundaryValues,
                      half_dirichlet, AnalyticalSolution)
