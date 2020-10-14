@@ -27,6 +27,7 @@ class NeumannBoundaryValues(Function):
 
 class Poisson:
     num_triangles = 1
+    h = 0  # Length of longest edge in a triangle in the mesh.
 
     points = None
     triangles = None
@@ -63,6 +64,19 @@ class Poisson:
         self.triangles = triangles
         self.edges = edges
         plot_mesh(points, triangles, edges)
+
+        h = 0
+        Cell.points = self.points
+
+        for triangle in self.triangles:
+            p1, p2, p3 = self.points[triangle]
+            for p1, p2 in [(p1, p2), (p2, p3), (p3, p1)]:
+                h_k = np.sqrt(((p2 - p1) ** 2).sum())
+                if h_k > h:
+                    h = h_k
+
+        self.h = h
+        print("   h =", h)
 
     def setup_system(self):
         print("Setup system")
@@ -151,15 +165,16 @@ class Poisson:
     def output_results(self):
         pass
 
-    def run(self):
+    def run(self, plot=True):
         self.make_grid()
         self.setup_system()
         self.assemble_system()
         self.solve()
 
-        ax = plot_solution(self.points, self.solution, self.triangles)
-        ax.set_title("numerical solution")
-        plt.show()
+        if plot:
+            ax = plot_solution(self.points, self.solution, self.triangles)
+            ax.set_title("numerical solution")
+            plt.show()
 
 
 if __name__ == '__main__':

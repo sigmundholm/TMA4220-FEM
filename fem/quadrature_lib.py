@@ -54,8 +54,9 @@ class QGauss:
     zetas = None
     weights = None
 
-    # A list of points (a list, event when the point is a value in one
-    # dimension), describing the domain as the convex hull of these points.
+    # A list of points (each point is a list, even when the point is a
+    # value in one dimension), describing the domain as the convex hull of
+    # these points.
     domain_corners = []
     jacobi_determinant = 0
 

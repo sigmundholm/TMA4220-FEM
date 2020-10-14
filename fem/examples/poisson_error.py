@@ -92,13 +92,15 @@ class PoissonError(Poisson):
         h1_error = np.sqrt(l2_diff_integral + h1_diff_integral)
         h1_error_semi_norm = np.sqrt(h1_diff_integral)
 
-        Error = namedtuple("Error", ["L2_error", "H1_error", "H1_semi_error"])
+        Error = namedtuple("Error", ["L2_error", "H1_error", "H1_semi_error",
+                                     "h"])
 
         print("L2", l2_error)
         print("H1", h1_error)
         print("H1-semi", h1_error_semi_norm)
+        print("h", self.h)
         return Error(L2_error=l2_error, H1_error=h1_error,
-                     H1_semi_error=h1_error_semi_norm)
+                     H1_semi_error=h1_error_semi_norm, h=self.h)
 
     def plot_analytical(self):
         analytical = self.AnalyticalSoln()
@@ -115,10 +117,11 @@ class PoissonError(Poisson):
                            self.triangles)
         ax.set_title("diff = numerical soln - exact soln")
 
-    def run(self):
-        super().run()
-        self.plot_analytical()
-        plt.show()
+    def run(self, plot=True):
+        super().run(plot=plot)
+        if plot:
+            self.plot_analytical()
+            plt.show()
         return self.compute_error()
 
 
