@@ -1,5 +1,7 @@
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+from matplotlib import rc
+from matplotlib.tri import Triangulation
 import numpy as np
 
 from fem.supplied import getdisc
@@ -28,6 +30,15 @@ def plot_mesh(points, triangles, edges):
     return ax
 
 
+def plot_mesh2(points, triangles, latex=True):
+    if latex:
+        rc('font', **{'family': 'sans-serif', 'sans-serif': ['Helvetica']})
+        # for Palatino and other serif fonts use:
+        # rc('font',**{'family':'serif','serif':['Palatino']})
+        rc('text', usetex=True)
+    plt.triplot(points[:, 0], points[:, 1])
+
+
 def plot_solution(points, solution, triangles, color="blue"):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -49,6 +60,6 @@ def plot_solution(points, solution, triangles, color="blue"):
 
 
 if __name__ == '__main__':
-    points, tri, edge = getdisc.get_disk(20)
-    plot_mesh(points, tri, edge)
+    points, tri, edge = getdisc.get_disk(400)
+    plot_mesh2(points, tri)
     plt.show()
