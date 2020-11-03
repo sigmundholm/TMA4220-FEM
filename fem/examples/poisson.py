@@ -39,7 +39,7 @@ class Poisson:
     solution = None
 
     def __init__(self, dim, degree, num_triangles, RHS, NeumannBD,
-                 is_dirichlet: callable):
+                 is_dirichlet: callable, quad_degree):
         self.dim = dim
         self.degree = degree
         self.num_triangles = num_triangles
@@ -52,6 +52,8 @@ class Poisson:
         # True if we should have Dirichlet boundary conditions here,
         # and False else.
         self.is_dirichlet = is_dirichlet
+
+        self.quad_degree = quad_degree
 
     def make_grid(self):
         print("Make grid")
@@ -91,11 +93,11 @@ class Poisson:
         :return:
         """
         print("Assemble system")
-        gauss = QGauss(dim=self.dim, degree=self.degree)
+        gauss = QGauss(dim=self.dim, n=self.quad_degree)
         fe_values = FEValues(self.fe, gauss, self.points, self.edges,
                              self.is_dirichlet, update_gradients=True)
 
-        face_gauss = QGauss(dim=self.dim - 1, degree=self.degree)
+        face_gauss = QGauss(dim=self.dim - 1, n=self.quad_degree)
         fe_face_values = FEFaceValues(self.fe, face_gauss, self.points,
                                       self.edges, self.is_dirichlet)
 
@@ -181,5 +183,6 @@ if __name__ == '__main__':
         return p[1] <= 0
 
 
-    p = Poisson(2, 4, 200, RightHandSide, NeumannBoundaryValues, is_dirichlet)
+    p = Poisson(2, 1, 200, RightHandSide, NeumannBoundaryValues,
+                is_dirichlet, quad_degree=4)
     p.run()

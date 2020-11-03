@@ -60,31 +60,35 @@ class QGauss:
     domain_corners = []
     jacobi_determinant = 0
 
-    def __init__(self, dim, degree):
+    def __init__(self, dim, n):
+        """
+        :param dim: The dimension of the integration.
+        :param n: The number of quadrature points.
+        """
         self.dim = dim
-        self.degree = degree
+        self.n = n
 
         if dim == 0:
             pass
 
         elif dim == 1:
-            if self.degree > len(ONE_DIM_GAUSS):
+            if self.n > len(ONE_DIM_GAUSS):
                 print("Need more quadrature points and weights for 1D gauss "
-                      f"of degree {degree}, using {len(ONE_DIM_GAUSS)} "
+                      f"of degree {n}, using {len(ONE_DIM_GAUSS)} "
                       f"points instead.")
-                self.degree = len(ONE_DIM_GAUSS)
-            self.points, self.weights = ONE_DIM_GAUSS[self.degree - 1]
+                self.n = len(ONE_DIM_GAUSS)
+            self.points, self.weights = ONE_DIM_GAUSS[self.n - 1]
 
         elif dim == 2:
             # The gauss quadrature points are given in barycentric coordinates.
-            if degree == 1:
+            if n == 1:
                 self.zetas, self.weights = ONE_POINT
-            elif degree <= 3:
-                self.degree = 3
+            elif n <= 3:
+                self.n = 3
                 self.zetas, self.weights = THREE_POINTS
-            elif degree == 4:
+            elif n == 4:
                 self.zetas, self.weights = FOUR_POINTS
-            elif degree == 7:
+            elif n == 7:
                 self.zetas, self.weights = SEVEN_POINTS
             else:
                 raise NotImplementedError()
@@ -167,7 +171,7 @@ class QGauss:
             pass
 
         elif self.dim == 2:
-            return quadrature2D(*points, Nq=self.degree, g=g)
+            return quadrature2D(*points, Nq=self.n, g=g)
         else:
             raise NotImplementedError()
 

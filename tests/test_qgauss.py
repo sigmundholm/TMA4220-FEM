@@ -64,7 +64,7 @@ class QGaussTest(unittest.TestCase):
             for points in np.random.random(2 * 10).reshape(-1, 2, 1):
                 points *= 10
 
-                gauss = QGauss(dim=1, degree=degree)
+                gauss = QGauss(dim=1, n=degree)
                 gauss.reinit(points)
 
                 value = 0
@@ -85,7 +85,7 @@ class QGaussTest(unittest.TestCase):
             # Check 10 random point setups for each quadrature degree.
             for points in np.random.random(4 * 10).reshape(-1, 2, 2):
                 points *= 10
-                gauss = QGauss(dim=1, degree=degree)
+                gauss = QGauss(dim=1, n=degree)
                 gauss.reinit(points)
 
                 value = 0
@@ -110,7 +110,7 @@ class QGaussTest(unittest.TestCase):
             for points in np.random.random(4 * 5).reshape(-1, 2, 2):
                 points *= 10
 
-                gauss = QGauss(dim=1, degree=degree)
+                gauss = QGauss(dim=1, n=degree)
                 gauss.reinit(points)
 
                 value = 0
@@ -145,7 +145,7 @@ class QGaussTest(unittest.TestCase):
                 for points in np.random.random(2 * 5).reshape(-1, 2, 1):
                     points *= 10
 
-                    gauss = QGauss(dim=1, degree=degree)
+                    gauss = QGauss(dim=1, n=degree)
                     gauss.reinit(points)
 
                     value = 0
@@ -176,7 +176,7 @@ class QGaussTest(unittest.TestCase):
 
         for degree in [1, 3, 4, 7]:
 
-            gauss = QGauss(dim=2, degree=degree)
+            gauss = QGauss(dim=2, n=degree)
             gauss.reinit(points)
 
             value = 0
@@ -188,7 +188,7 @@ class QGaussTest(unittest.TestCase):
             self.assertAlmostEqual(value, integral[0], places=1)
 
     def test_jacobi_determinant(self):
-        gauss = QGauss(dim=2, degree=3)
+        gauss = QGauss(dim=2, n=3)
         for points in np.random.random(6 * 10).reshape(-1, 3, 2):
             points *= 10
             p1, p2, p3 = points
