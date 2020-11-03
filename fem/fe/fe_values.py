@@ -1,6 +1,7 @@
 import numpy as np
 
 from fem.fe.fe_q import FE_Q
+from fem.fe.fe_system import FESystem
 from fem.quadrature_lib import QGauss
 from fem.triangle import Cell, Face
 
@@ -9,14 +10,16 @@ class FEValuesBase:
     cell: Cell = None
 
     # Maps from local to global dof indices.
-    local2global = {}
+    loc2glob_dofs = {}
+    loc2glob_vertices = {}
 
     def __init__(self, fe: FE_Q, quadrature: QGauss, points: np.ndarray,
                  edges: np.ndarray, is_dirichlet: callable, update_values=True,
                  update_gradients=False, update_quadrature_points=False,
                  update_normal_vectors=False, update_JxW_values=False):
         """
-        :param fe:
+        :param fe: a single FE_Q object for scalar problems, and a FESystem
+        object for vector problems.
         :param quadrature:
         :param points:
         :param edges:
@@ -28,6 +31,18 @@ class FEValuesBase:
         :param update_quadrature_points:
         :param update_JxW_values:
         """
+
+        self.all_fe_values: [FEValues] = []
+        if type(fe) is FESystem:
+            for fe_q in fe.fe_qs:
+                fe_values = self.__class__(fe_q, quadrature, points, edges,
+                                           is_dirichlet, update_values,
+                                           update_gradients,
+                                           update_quadrature_points,
+                                           update_normal_vectors,
+                                           update_JxW_values)
+                self.all_fe_values.append(fe_values)
+
         self.fe: FE_Q = fe
         self.quadrature: QGauss = quadrature
 
@@ -61,21 +76,54 @@ class FEValuesBase:
 
     @property
     def n_quadrature_points(self):
-        return self.quadrature.degree
+        return self.quadrature.n
 
     def quadrature_point_indices(self):
         return list(range(self.n_quadrature_points))
 
     def dof_indices(self):
-        return list(range(len(self.cell.corner_indices)))
+        return list(range(self.fe.dofs_per_cell))
 
     def reinit(self, cell: Cell):
         self.cell: Cell = cell
-        self.local2global = {loc: glob for loc, glob in
-                             zip(range(len(cell.corner_indices)),
-                                 cell.corner_indices)}
+
+        self.loc2glob_dofs = self.__create_local2global_dof_map(cell)
+        self.loc2glob_vertices = self.__create_local2global_vertex_map(cell)
+
         self.fe.reinit(cell, update_values=self.update_values,
                        update_gradients=self.update_gradients)
+
+    def __create_local2global_dof_map(self, cell):
+        if type(self.fe) is FESystem:
+            # Vector problem
+            loc2glob = {}
+
+            # Local index
+            k = 0
+            for glob in cell.corner_indices:
+                for d, fe_q in enumerate(self.fe.fe_qs):
+                    loc2glob[k] = len(self.fe.fe_qs) * glob + d
+                    k += 1
+            return loc2glob
+
+        return {loc: glob for loc, glob in zip(range(len(cell.corner_indices)),
+                                               cell.corner_indices)}
+
+    def __create_local2global_vertex_map(self, cell):
+        if type(self.fe) is FESystem:
+            # Vector problem
+            loc2glob = {}
+
+            # Local index
+            k = 0
+            for glob in cell.corner_indices:
+                for _ in self.fe.fe_qs:
+                    loc2glob[k] = glob
+                    k += 1
+            return loc2glob
+
+        return {loc: glob for loc, glob in zip(range(len(cell.corner_indices)),
+                                               cell.corner_indices)}
 
     def quadrature_point(self, q_index):
         """
@@ -92,11 +140,14 @@ class FEValuesBase:
         :return:
         """
         x_q = self.quadrature_point(q_index)
-        global_index = self.local2global[i]
+        global_index = self.loc2glob_vertices[i]
         shape_center = self.points[global_index]
         if self.is_boundary[global_index] and self.is_dirichlet(shape_center):
             return 0
 
+        # TODO er dette riktig?
+        if len(self.loc2glob_dofs.keys()) != len(self.cell.corner_indices):
+            i = i // 2
         return self.fe.shape_value(i, x_q)
 
     def shape_grad(self, i, q_index):
@@ -112,12 +163,15 @@ class FEValuesBase:
         :return:
         """
         factor = 1
-        global_index = self.local2global[i]
+        global_index = self.loc2glob_vertices[i]
         shape_center = self.points[global_index]
         if self.is_boundary[global_index] and self.is_dirichlet(shape_center):
             # TODO this test strongly assumes linear shape functions.
             factor = 0
 
+        # TODO er dette riktig?
+        if len(self.loc2glob_dofs.keys()) != len(self.cell.corner_indices):
+            i = i // 2
         return self.fe.shape_grad(i) * factor
 
     def JxW(self, q_index) -> float:
@@ -129,9 +183,14 @@ class FEValuesBase:
         return self.quadrature.weights[q_index] \
                * self.quadrature.jacobian()
 
-    # TODO vector support!
-    
-
+    def __getitem__(self, item):
+        """
+        Used for vector problems, when fe is of type FESystem.
+        :param item:
+        :return:
+        """
+        assert type(self.fe) is FESystem
+        return self.all_fe_values[item]
 
 
 class FEValues(FEValuesBase):
@@ -146,6 +205,13 @@ class FEValues(FEValuesBase):
         """
         super(FEValues, self).reinit(cell)
 
+        if self.all_fe_values:
+            assert type(self.fe) is FESystem
+            for fe_v in self.all_fe_values:
+                fe_v.reinit(cell)
+                fe_v.loc2glob_dofs = self.loc2glob_dofs
+                fe_v.loc2glob_vertices = self.loc2glob_vertices
+
         # The quadrature should integrate over the whole cell.
         self.quadrature.reinit(cell.corner_points)
 
@@ -154,6 +220,13 @@ class FEFaceValues(FEValuesBase):
 
     def reinit(self, cell: Cell, face: Face = None):
         super(FEFaceValues, self).reinit(cell)
+
+        if self.all_fe_values:
+            assert type(self.fe) is FESystem
+            for fe_v in self.all_fe_values:
+                fe_v.reinit(cell, face)
+                fe_v.loc2glob_dofs = self.loc2glob_dofs
+                fe_v.loc2glob_vertices = self.loc2glob_vertices
 
         # The quadrature should integrate over a face of the cell.
         self.quadrature.reinit(face.edge_points)
