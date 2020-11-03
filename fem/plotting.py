@@ -27,6 +27,9 @@ def plot_mesh(points, triangles, edges):
             except IndexError:
                 ax.plot(points[edge, 0], [0, 0], color="black")
 
+    for edge in edges:
+        ax.plot(points[edge, 0], points[edge, 1], color="pink")
+
     return ax
 
 
@@ -82,7 +85,13 @@ def plot_solution(points, solution, triangles, latex=False):
 if __name__ == '__main__':
     points, tri, edge = getdisc.get_disk(800)
     # plot_mesh2(points, tri)
+    from fem.supplied import getplate
+    points, tri, edge = getplate.get_plate(10)
+    print(len(points))
+    print(tri)
+    edge -= 1
 
-    z = np.linspace(-1, 1, len(points))
-    plot_solution(points, z, tri)
+    plot_mesh(points, tri, edge)
+    # z = np.linspace(-1, 1, len(points))
+    # plot_solution(points, z, tri)
     plt.show()
