@@ -3,8 +3,8 @@ import unittest
 import numpy as np
 from scipy.integrate import dblquad
 
-from fem.fe_values import FEValues
-from fem.fe_q import FE_Q
+from fem.fe.fe_values import FEValues
+from fem.fe.fe_q import FE_Q
 from fem.quadrature_lib import QGauss
 from fem.triangle import Cell
 

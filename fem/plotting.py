@@ -1,10 +1,9 @@
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib.tri import Triangulation
 import numpy as np
 
-from fem.supplied import getdisc
+from fem.supplied import getdisc, getplate
 
 
 def plot_mesh(points, triangles, edges):
@@ -85,7 +84,6 @@ def plot_solution(points, solution, triangles, latex=False):
 if __name__ == '__main__':
     points, tri, edge = getdisc.get_disk(800)
     # plot_mesh2(points, tri)
-    from fem.supplied import getplate
     points, tri, edge = getplate.get_plate(10)
     print(len(points))
     print(tri)

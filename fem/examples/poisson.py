@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from fem.fe_values import FEFaceValues, FEValues
-from fem.fe_q import FE_Q
+from fem.fe.fe_values import FEFaceValues, FEValues
+from fem.fe.fe_q import FE_Q
 from fem.function import Function
 from fem.plotting import plot_mesh, plot_solution
 from fem.supplied import getdisc
@@ -58,7 +58,6 @@ class Poisson:
         points, triangles, edges = getdisc.get_disk(self.num_triangles,
                                                     dim=self.dim)
         # TODO med firkant som mesh funker ikke dirichlet på bdd.
-        from fem.supplied import getplate
         # points, triangles, edges = getplate.get_plate(self.num_triangles)
         self.points = points
         self.triangles = triangles

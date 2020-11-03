@@ -1,6 +1,6 @@
 import numpy as np
 
-from fem.fe_q import FE_Q
+from fem.fe.fe_q import FE_Q
 from fem.quadrature_lib import QGauss
 from fem.triangle import Cell, Face
 
@@ -128,6 +128,10 @@ class FEValuesBase:
         """
         return self.quadrature.weights[q_index] \
                * self.quadrature.jacobian()
+
+    # TODO vector support!
+    
+
 
 
 class FEValues(FEValuesBase):

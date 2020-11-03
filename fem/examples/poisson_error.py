@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from fem.examples.poisson import Poisson
-from fem.fe_values import FEValues
+from fem.fe.fe_values import FEValues
 from fem.function import Function
 from fem.plotting import plot_solution
 from fem.quadrature_lib import QGauss
