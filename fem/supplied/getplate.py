@@ -57,4 +57,5 @@ def get_plate(N):
         edge[i, 0] = west[0, i - L1 - L2 - L3]
         edge[i, 1] = west[1, i - L1 - L2 - L3]
 
+    edge -= 1
     return p, tri, edge
