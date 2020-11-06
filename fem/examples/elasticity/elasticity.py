@@ -129,19 +129,21 @@ class Elasticity:
 
                     if k % 2 == 0:
                         # k is even
-                        # Then the test function should be phi_k = [0, v_2]
-                        value = [0, fe_values[1].shape_value(i_hat, q)]
+                        # Then the test function should be phi_k = [v_k, 0]
+                        value = [fe_values[1].shape_value(k, q), 0]
                         phis.append(np.array(value))
 
-                        grad = [[0, 0], fe_values[1].shape_grad(i_hat, q)]
+                        grad = [fe_values[1].shape_grad(k, q), [0, 0]]
                         grad_phis.append(grad)
                     else:
                         # k is odd
-                        # Then the test function should be phi_k = [v_1, 0]
-                        value = [fe_values[0].shape_value(i_hat, q), 0]
+                        # Then the test function should be phi_k+1 = [0, v_k]
+                        value = [0, fe_values[0].shape_value(k, q)]
                         phis.append(np.array(value))
 
-                        grad = [fe_values[0].shape_grad(i_hat, q), [0, 0]]
+                        # TODO ser gradientene riktige ut? har de litt små
+                        # verdier? skal vel være på størrelsen 1/h
+                        grad = [[0, 0], fe_values[0].shape_grad(k, q)]
                         grad_phis.append(grad)
 
                 for i in fe_values.dof_indices():
