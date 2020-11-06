@@ -100,9 +100,9 @@ class FEValuesBase:
 
             # Local index
             k = 0
-            for glob in cell.corner_indices:
+            for global_node_index in cell.corner_indices:
                 for d, fe_q in enumerate(self.fe.fe_qs):
-                    loc2glob[k] = len(self.fe.fe_qs) * glob + d
+                    loc2glob[k] = len(self.fe.fe_qs) * global_node_index + d
                     k += 1
             return loc2glob
 

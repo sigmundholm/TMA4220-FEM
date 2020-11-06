@@ -111,8 +111,8 @@ class QGauss:
             jacobi = 0.5 * np.abs(points[1][0] - points[0][0])
             if space_dim == 1:
                 # When we just integrate along some interval, we only need
-                # the jacobi determinant to transform the integral from [-1,
-                # 1] to [a, b].
+                # the jacobi determinant to transform the integral from [-1, 1]
+                # to [a, b].
                 ds = 1
             elif space_dim == 2:
                 # In two space dimensions, we integrate over the line ds,
