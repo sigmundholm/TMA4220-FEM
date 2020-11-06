@@ -2,26 +2,32 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from fem.fe.fe_system import FESystem
-from fem.fe.fe_values import FEFaceValues, FEValues
+from fem.fe.fe_values import FEValues
 from fem.fe.fe_q import FE_Q
 from fem.function import Function
-from fem.plotting import plot_mesh, plot_solution
-from fem.supplied import getdisc
+from fem.plotting import plot_mesh, plot_solution, plot_solution_old
+from fem.supplied import getplate
 from fem.triangle import Cell
 from fem.quadrature_lib import QGauss
 
 
 class RightHandSide(Function):
+    def __init__(self, nu, E):
+        self.nu = nu
+        self.E = E
+
     def value(self, p):
-        return np.array([1, 1])
+        sigma = self.E / (1 - self.nu ** 2)
+        x, y = p
+        f_1 = sigma * (-2 * y ** 2 - x ** 2 + nu * x ** 2
+                       - 2 * nu * x * y - 2 * x * y + 3 - nu)
+        f_2 = sigma * (-2 * x ** 2 - y ** 2 + nu * y ** 2
+                       - 2 * nu * x * y - 2 * x * y + 3 - nu)
+
+        return np.array([f_1, f_2])
 
 
 class BoundaryValues(Function):
-    def value(self, p):
-        return np.array([0, 0])
-
-
-class NeumannBoundaryValues(Function):
     def value(self, p):
         return np.array([0, 0])
 
@@ -39,7 +45,7 @@ class Elasticity:
     system_rhs = None
     solution = None
 
-    def __init__(self, dim, degree, num_triangles, RHS, NeumannBD,
+    def __init__(self, dim, degree, num_triangles, rhs, neumann_bd,
                  is_dirichlet: callable, nu, E):
         self.dim = dim
         self.degree = degree
@@ -48,8 +54,8 @@ class Elasticity:
         self.nu = nu
         self.E = E
 
-        self.RHS = RHS
-        self.NeumannBD = NeumannBD
+        self.rhs = rhs
+        self.neumann_bd = neumann_bd
         self.fe = FESystem(FE_Q(dim, degree), FE_Q(dim, degree))
 
         # A function taking a point (np.ndarray) as argument, and returning
@@ -59,10 +65,7 @@ class Elasticity:
 
     def make_grid(self):
         print("Make grid")
-        points, triangles, edges = getdisc.get_disk(self.num_triangles,
-                                                    dim=self.dim)
-        # TODO med firkant som mesh funker ikke dirichlet på bdd.
-        # points, triangles, edges = getplate.get_plate(self.num_triangles)
+        points, triangles, edges = getplate.get_plate(self.num_triangles)
         self.points = points
         self.triangles = triangles
         self.edges = edges
@@ -100,21 +103,11 @@ class Elasticity:
         fe_values = FEValues(self.fe, gauss, self.points, self.edges,
                              self.is_dirichlet, update_gradients=True)
 
-        face_gauss = QGauss(dim=self.dim - 1, n=self.degree + 1)
-        fe_face_values = FEFaceValues(self.fe, face_gauss, self.points,
-                                      self.edges, self.is_dirichlet)
-
-        # TODO only homogeneous Dirichlet supperted
-        rhs = self.RHS()
         boundary_values = BoundaryValues()
-        neumann_bdd_values = self.NeumannBD()
 
         nu = self.nu
         sigma = self.E / (1 - self.nu ** 2)
         sigma_2 = (1 - self.nu) / 2
-
-        phis = []
-        grad_phis = []
 
         for triangle in self.triangles:
             # Nå er vi i en celle
@@ -128,9 +121,11 @@ class Elasticity:
                 x_q = fe_values.quadrature_point(q)
                 dx = fe_values.JxW(q)
 
-                for k in range(2 * len(fe_values.dof_indices())):
+                phis = []
+                grad_phis = []
+
+                for k in fe_values.dof_indices():
                     # This is the global point index
-                    i_hat = k // 2
 
                     if k % 2 == 0:
                         # k is even
@@ -174,65 +169,6 @@ class Elasticity:
 
                     val = rhs.value(x_q) @ phi_i * dx  # (v, f)
                     self.system_rhs[fe_values.loc2glob_dofs[i]] += val
-
-            for face in cell.face_iterators():
-                if not face.at_boundary():
-                    continue
-
-                fe_face_values.reinit(cell, face)
-
-                for q in fe_face_values.quadrature_point_indices():
-                    x_q = fe_face_values.quadrature_point(q)
-                    h = neumann_bdd_values.value(x_q)
-                    ds = fe_face_values.JxW(q)
-
-                    for k in fe_values.dof_indices():
-                        # This is the global point index
-                        i_hat = k // 2
-
-                        if k % 2 == 0:
-                            # k is even
-                            # Then the test function should be phi_k = [0, v_2]
-                            value = [0, fe_face_values[1].shape_value(i_hat, q)]
-                            phis.append(np.array(value))
-
-                            grad = [[0, 0],
-                                    fe_face_values[1].shape_grad(i_hat, q)]
-                            grad_phis.append(grad)
-                        else:
-                            # k is odd
-                            # Then the test function should be phi_k = [v_1, 0]
-                            value = [fe_face_values[0].shape_value(i_hat, q)]
-                            phis.append(np.array(value))
-
-                            grad = [fe_face_values[0].shape_grad(i_hat, q),
-                                    [0, 0]]
-                            grad_phis.append(grad)
-
-                    for i in fe_values.dof_indices():
-                        phi_i = phis[i]
-                        grad_phi_i = grad_phis[i]
-                        v_1, v_2 = phi_i
-                        grad_v_1, grad_v_2 = grad_phi_i
-
-                        for j in fe_values.dof_indices():
-                            # phi_j = phis[j]
-                            # u_1, u_2 = phi_j
-                            grad_phi_j = phis[j]
-                            grad_u_1, grad_u_2 = grad_phi_j
-
-                            val = 0
-                            self.system_matrix[fe_face_values.loc2glob_dofs[i],
-                                               fe_face_values.loc2glob_dofs[j]] \
-                                += val
-
-                        # The Neumann boundary term, should be zero on the
-                        # Dirichlet part of the boundary, because
-                        # fe_face_values should set the shape functions on
-                        # the dofs along that part of the boundary to the
-                        # zero function.
-                        val = phi_i @ h * ds  # (v, h)
-                        self.system_rhs[fe_face_values.loc2glob_dofs[i]] += val
 
         # This fixes so the matrix is invertible, but could just have
         # removed those dofs that are not a dof from the matrix, so this
@@ -293,10 +229,11 @@ if __name__ == '__main__':
     def is_dirichlet(p: np.ndarray):
         return True
 
-
     nu = 2
     E = 1
 
-    p = Elasticity(2, 1, 200, RightHandSide, NeumannBoundaryValues,
+    rhs = RightHandSide(nu, E)
+
+    p = Elasticity(2, 1, 20, rhs, None,
                    is_dirichlet, nu, E)
     p.run()
