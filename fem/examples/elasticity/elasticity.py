@@ -149,27 +149,24 @@ class Elasticity:
                 for i in fe_values.dof_indices():
                     phi_i = phis[i]
                     grad_phi_i = grad_phis[i]
-                    # v_1, v_2 = phi_i
                     grad_v_1, grad_v_2 = grad_phi_i
 
                     for j in fe_values.dof_indices():
-                        # phi_j = phis[j]
-                        # u_1, u_2 = phi_j
                         grad_phi_j = grad_phis[j]
                         grad_u_1, grad_u_2 = grad_phi_j
 
                         val = sigma * (
                                 grad_v_1[0] * (grad_u_1[0] + nu * grad_u_2[1])
-                                + grad_v_1[1] * (sigma_2 * (grad_u_1[1] +
-                                                            grad_u_2[0]))
-                                + grad_v_2[0] * (sigma_2 * (grad_u_1[1] +
-                                                            grad_u_2[0]))
-                                + grad_v_2[1] * (nu * grad_u_1[0] + grad_u_2[1])
+                                +
+                                grad_v_2[1] * (nu * grad_u_1[0] + grad_u_2[1])
+                                +
+                                (grad_v_1[1] + grad_v_2[0]) *
+                                (sigma_2 * (grad_u_1[1] + grad_u_2[0]))
                         ) * dx
                         self.system_matrix[fe_values.loc2glob_dofs[i],
                                            fe_values.loc2glob_dofs[j]] += val
 
-                    val = rhs.value(x_q) @ phi_i * dx  # (v, f)
+                    val = self.rhs.value(x_q) @ phi_i * dx  # (v, f)
                     self.system_rhs[fe_values.loc2glob_dofs[i]] += val
 
         # This fixes so the matrix is invertible, but could just have
