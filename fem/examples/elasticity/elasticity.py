@@ -199,10 +199,10 @@ class Elasticity:
 
         for i in range(len(self.solution)):
             if i % 2 == 0:
-                # i is even, so must be for u_1 (????) TODO check this..
+                # i is even, so must be for u_1
                 u_1[i // 2] = self.solution[i]
             else:
-                u_2[(i - 1) // 2] = self.solution[i]
+                u_2[i // 2] = self.solution[i]
 
         if plot:
             ax = plot_solution(self.points, u_1, self.triangles)
