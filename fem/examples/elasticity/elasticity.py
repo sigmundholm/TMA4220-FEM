@@ -32,6 +32,13 @@ class BoundaryValues(Function):
         return np.array([0, 0])
 
 
+class AnalyticalSolution(Function):
+    def value(self, p):
+        x, y = p
+        return np.array(
+            [(x ** 2 - 1) * (y ** 2 - 1), (x ** 2 - 1) * (y ** 2 - 1)])
+
+
 class Elasticity:
     num_triangles = 1
     h = 0  # Length of longest edge in a triangle in the mesh.
@@ -45,7 +52,8 @@ class Elasticity:
     system_rhs = None
     solution = None
 
-    def __init__(self, dim, degree, num_triangles, rhs, neumann_bd,
+    def __init__(self, dim, degree, num_triangles, rhs: Function,
+                 neumann_bd: Function, analytical_solution: Function,
                  is_dirichlet: callable, nu, E):
         self.dim = dim
         self.degree = degree
@@ -56,6 +64,7 @@ class Elasticity:
 
         self.rhs = rhs
         self.neumann_bd = neumann_bd
+        self.analytical_solution = analytical_solution
         self.fe = FESystem(FE_Q(dim, degree), FE_Q(dim, degree))
 
         # A function taking a point (np.ndarray) as argument, and returning
@@ -222,17 +231,15 @@ class Elasticity:
 
 if __name__ == '__main__':
     def is_dirichlet(p: np.ndarray):
-        return p[1] <= 0
-
-
-    def is_dirichlet(p: np.ndarray):
         return True
+
 
     nu = 2
     E = 1
 
     rhs = RightHandSide(nu, E)
+    analytical = AnalyticalSolution()
 
-    p = Elasticity(2, 1, 20, rhs, None,
+    p = Elasticity(2, 1, 15, rhs, None, analytical,
                    is_dirichlet, nu, E)
     p.run()
