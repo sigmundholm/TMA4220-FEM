@@ -123,12 +123,12 @@ class Poisson:
                               @ fe_values.shape_grad(j, q_index) \
                               * fe_values.JxW(q_index)  # (∇u_i, ∇v_j)
 
-                        self.system_matrix[fe_values.local2global[i],
-                                           fe_values.local2global[j]] += val
+                        self.system_matrix[fe_values.loc2glob_dofs[i],
+                                           fe_values.loc2glob_dofs[j]] += val
 
                     val = fe_values.shape_value(i, q_index) * rhs.value(x_q) \
                           * fe_values.JxW(q_index)  # (v_i, f)
-                    self.system_rhs[fe_values.local2global[i]] += val
+                    self.system_rhs[fe_values.loc2glob_dofs[i]] += val
 
             for face in cell.face_iterators():
                 if not face.at_boundary():
@@ -143,7 +143,7 @@ class Poisson:
                         g = neumann_bdd_values.value(x_q)
                         val = fe_face_values.shape_value(j, q_index) * g \
                               * fe_face_values.JxW(q_index)  # (g, v_j)
-                        self.system_rhs[fe_face_values.local2global[j]] += val
+                        self.system_rhs[fe_face_values.loc2glob_dofs[j]] += val
 
         # TODO this fixes so the matrix is invertible, but could just have
         # removed those dofs that are not a dof from the matrix, so this
