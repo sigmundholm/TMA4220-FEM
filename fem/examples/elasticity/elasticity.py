@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from collections import namedtuple
 
 from fem.fe.fe_system import FESystem
 from fem.fe.fe_values import FEValues
@@ -19,6 +20,7 @@ class RightHandSide(Function):
     def value(self, p):
         sigma = self.E / (1 - self.nu ** 2)
         x, y = p
+        nu = self.nu
         f_1 = sigma * (-2 * y ** 2 - x ** 2 + nu * x ** 2
                        - 2 * nu * x * y - 2 * x * y + 3 - nu)
         f_2 = sigma * (-2 * x ** 2 - y ** 2 + nu * y ** 2
@@ -38,6 +40,17 @@ class AnalyticalSolution(Function):
         return np.array(
             [(x ** 2 - 1) * (y ** 2 - 1), (x ** 2 - 1) * (y ** 2 - 1)])
 
+    def gradient(self, p, value=None):
+        x, y = p
+        grad_u1 = np.array([2 * x * (y ** 2 - 1), 2 * y * (x ** 2 - 1)])
+        value = np.zeros((2, 2))
+        value[0, :] = grad_u1
+        value[1, :] = grad_u1
+        return value
+
+
+Error = namedtuple("Error", ["L2_error", "H1_error", "H1_semi_error", "h"])
+
 
 class Elasticity:
     num_triangles = 1
@@ -52,18 +65,17 @@ class Elasticity:
     system_rhs = None
     solution = None
 
-    def __init__(self, dim, degree, num_triangles, rhs: Function,
-                 neumann_bd: Function, analytical_solution: Function,
-                 is_dirichlet: callable, nu, E):
+    def __init__(self, dim, degree, quad_degree, num_triangles, rhs: Function,
+                 analytical_solution: Function, is_dirichlet: callable, nu, E):
         self.dim = dim
         self.degree = degree
+        self.quad_degree = quad_degree
         self.num_triangles = num_triangles
 
         self.nu = nu
         self.E = E
 
         self.rhs = rhs
-        self.neumann_bd = neumann_bd
         self.analytical_solution = analytical_solution
         self.fe = FESystem(FE_Q(dim, degree), FE_Q(dim, degree))
 
@@ -108,7 +120,7 @@ class Elasticity:
         :return:
         """
         print("Assemble system")
-        gauss = QGauss(dim=self.dim, n=self.degree + 1)
+        gauss = QGauss(dim=self.dim, n=self.quad_degree)
         fe_values = FEValues(self.fe, gauss, self.points, self.edges,
                              self.is_dirichlet, update_gradients=True)
 
@@ -219,12 +231,85 @@ class Elasticity:
             ax2.set_title("numerical u_2")
             plt.show()
 
-    def run(self, plot=True):
+    def compute_error(self):
+        print("Compute error")
+
+        gauss = QGauss(dim=self.dim, n=self.quad_degree)
+        fe_values = FEValues(self.fe, gauss, self.points, self.edges,
+                             self.is_dirichlet, update_gradients=True)
+
+        l2_diff_integral = 0
+        h1_diff_integral = 0
+        for triangle in self.triangles:
+            cell = Cell(self.dim, triangle)
+            fe_values.reinit(cell)
+
+            for q in fe_values.quadrature_point_indices():
+
+                numerical_sol = 0
+                numerical_grad = 0
+
+                # Interpolate the solution value and gradient in the quadrature
+                # point.
+                phis = []
+                grad_phis = []
+
+                for k in fe_values.dof_indices():
+                    # This is the global point index
+
+                    if k % 2 == 0:
+                        # k is even
+                        # Then the test function should be phi_k = [v_k, 0]
+                        value = [fe_values[0].shape_value(k, q), 0]
+                        grad = [fe_values[0].shape_grad(k, q), [0, 0]]
+                    else:
+                        # k is odd
+                        # Then the test function should be phi_k+1 = [0, v_k]
+                        value = [0, fe_values[1].shape_value(k, q)]
+                        # TODO ser gradientene riktige ut? har de litt små
+                        # verdier? skal vel være på størrelsen 1/h
+                        grad = [[0, 0], fe_values[1].shape_grad(k, q)]
+                    phis.append(np.array(value))
+                    grad_phis.append(np.array(grad))
+
+                for i in fe_values.dof_indices():
+                    global_index = fe_values.loc2glob_dofs[i]
+                    numerical_sol += self.solution[global_index] * phis[i]
+                    numerical_grad += self.solution[global_index] * grad_phis[i]
+
+                x_q = fe_values.quadrature_point(q)
+                exact_solution = self.analytical_solution.value(x_q)
+                exact_grad = self.analytical_solution.gradient(x_q)
+
+                diff = numerical_sol - exact_solution
+                # Integrate the square difference of the two
+                l2_diff_integral += diff @ diff * fe_values.JxW(q)
+
+                # TODO calculate error in H1-norm
+                # Integrate the square difference of the gradients.
+                gradient_diff = numerical_grad - exact_grad
+                gradient_diff_ip = np.trace(gradient_diff @ gradient_diff.T)
+
+                h1_diff_integral += gradient_diff_ip * fe_values.JxW(q)
+
+        l2_error = np.sqrt(l2_diff_integral)
+        h1_error = np.sqrt(l2_diff_integral + h1_diff_integral)
+        h1_error_semi_norm = np.sqrt(h1_diff_integral)
+
+        print("L2", l2_error)
+        print("H1", h1_error)
+        print("H1-semi", h1_error_semi_norm)
+        print("h", self.h)
+        return Error(L2_error=l2_error, H1_error=h1_error,
+                     H1_semi_error=h1_error_semi_norm, h=self.h)
+
+    def run(self, plot=True) -> Error:
         self.make_grid()
         self.setup_system()
         self.assemble_system()
         self.solve()
         self.output_results(plot)
+        return self.compute_error()
 
 
 if __name__ == '__main__':
@@ -238,6 +323,5 @@ if __name__ == '__main__':
     rhs = RightHandSide(nu, E)
     analytical = AnalyticalSolution()
 
-    p = Elasticity(2, 1, 15, rhs, None, analytical,
-                   is_dirichlet, nu, E)
+    p = Elasticity(2, 1, 3, 10, rhs, analytical, is_dirichlet, nu, E)
     p.run()
