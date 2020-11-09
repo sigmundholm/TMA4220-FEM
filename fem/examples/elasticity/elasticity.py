@@ -232,7 +232,7 @@ if __name__ == '__main__':
         return True
 
 
-    nu = 2
+    nu = 1 / 2
     E = 1
 
     rhs = RightHandSide(nu, E)
