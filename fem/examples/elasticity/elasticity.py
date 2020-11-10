@@ -209,7 +209,7 @@ class Elasticity:
         print("Solve")
         self.solution = np.linalg.solve(self.system_matrix, self.system_rhs)
 
-    def output_results(self, plot):
+    def output_results(self, plot, plot_func=plot_solution):
         print("Output results")
 
         u_length = len(self.solution) // 2
@@ -224,12 +224,11 @@ class Elasticity:
                 u_2[i // 2] = self.solution[i]
 
         if plot:
-            ax = plot_solution(self.points, u_1, self.triangles)
+            ax = plot_func(self.points, u_1, self.triangles)
             ax.set_title("numerical u_1")
 
-            ax2 = plot_solution(self.points, u_2, self.triangles)
+            ax2 = plot_func(self.points, u_2, self.triangles)
             ax2.set_title("numerical u_2")
-            plt.show()
 
     def compute_error(self):
         print("Compute error")
@@ -237,6 +236,9 @@ class Elasticity:
         gauss = QGauss(dim=self.dim, n=self.quad_degree)
         fe_values = FEValues(self.fe, gauss, self.points, self.edges,
                              self.is_dirichlet, update_gradients=True)
+
+        # The gradient in each cell
+        gradients = []
 
         l2_diff_integral = 0
         h1_diff_integral = 0
@@ -277,6 +279,14 @@ class Elasticity:
                     numerical_sol += self.solution[global_index] * phis[i]
                     numerical_grad += self.solution[global_index] * grad_phis[i]
 
+                if q == 0:
+                    # Only add the gradient from one quadrature point,
+                    # since it should be constant on each cell.
+                    gradients.append(numerical_grad)
+                else:
+                    # Check that the gradient is constant on each cell.
+                    assert np.all(gradients[-1] == numerical_grad)
+
                 x_q = fe_values.quadrature_point(q)
                 exact_solution = self.analytical_solution.value(x_q)
                 exact_grad = self.analytical_solution.gradient(x_q)
@@ -285,8 +295,7 @@ class Elasticity:
                 # Integrate the square difference of the two
                 l2_diff_integral += diff @ diff * fe_values.JxW(q)
 
-                # TODO calculate error in H1-norm
-                # Integrate the square difference of the gradients.
+                # Integrate rank two tensor product of the gradient difference.
                 gradient_diff = numerical_grad - exact_grad
                 gradient_diff_ip = np.trace(gradient_diff @ gradient_diff.T)
 
@@ -301,15 +310,78 @@ class Elasticity:
         print("H1-semi", h1_error_semi_norm)
         print("h", self.h)
         return Error(L2_error=l2_error, H1_error=h1_error,
-                     H1_semi_error=h1_error_semi_norm, h=self.h)
+                     H1_semi_error=h1_error_semi_norm, h=self.h), gradients
+
+    def stress_recovery(self, gradients):
+        # Each element: (gradient sum, #elements in the sum)
+        nodes = [[0, 0] for i in range(len(self.points))]
+        for triangle, gradient in zip(self.triangles, gradients):
+            for index in triangle:
+                nodes[index][0] += gradient
+                nodes[index][1] += 1
+
+        # Divide the gradient sums on the number of elements in each sum to
+        # get the average at each node poins.
+        avg_gradients = []
+        for grad, n in nodes:
+            avg_gradients.append(grad / n)
+
+        eps_xx = []
+        eps_yy = []
+        eps_xy = []
+        epsilon_bars = []
+        for grad in avg_gradients:
+            e_xx = grad[0, 0]
+            e_yy = grad[1, 1]
+            e_xy = grad[0, 1] + grad[1, 0]
+
+            eps_xx.append(e_xx)
+            eps_yy.append(e_yy)
+            eps_xy.append(e_xy)
+
+            eps_bar = np.array([e_xx, e_yy, e_xy]).reshape((-1, 1))
+            epsilon_bars.append(eps_bar)
+
+        C = self.E / (1 - self.nu ** 2) * np.array([[1, self.nu, 0],
+                                                    [self.nu, 1, 0],
+                                                    [0, 0, (1 - self.nu) / 2]])
+        sigma_bars = []
+        sigma_xx = []
+        sigma_yy = []
+        sigma_xy = []
+        for epsilon_bar in epsilon_bars:
+            sigma_bar = C @ epsilon_bar
+            sigma_bars.append(sigma_bar)
+
+            sigma_xx.append(sigma_bar[0])
+            sigma_yy.append(sigma_bar[1])
+            sigma_xy.append(sigma_bar[2])
+
+        plot_func = plot_solution_old
+
+        ax = plot_func(self.points, np.array(sigma_xx), self.triangles,
+                           latex=True)
+        ax.set_title("$\sigma_{xx}")
+
+        ax = plot_func(self.points, np.array(sigma_yy), self.triangles,
+                           latex=True)
+        ax.set_title("$\sigma_{yy}")
+
+        ax = plot_func(self.points, np.array(sigma_xy), self.triangles,
+                           latex=True)
+        ax.set_title("$\sigma_{xy}")
+
+        plt.show()
 
     def run(self, plot=True) -> Error:
         self.make_grid()
         self.setup_system()
         self.assemble_system()
         self.solve()
-        self.output_results(plot)
-        return self.compute_error()
+        self.output_results(plot, plot_func=plot_solution_old)
+        error, gradients = self.compute_error()
+        self.stress_recovery(gradients)
+        return error
 
 
 if __name__ == '__main__':
@@ -323,5 +395,5 @@ if __name__ == '__main__':
     rhs = RightHandSide(nu, E)
     analytical = AnalyticalSolution()
 
-    p = Elasticity(2, 1, 3, 10, rhs, analytical, is_dirichlet, nu, E)
+    p = Elasticity(2, 1, 3, 15, rhs, analytical, is_dirichlet, nu, E)
     p.run()

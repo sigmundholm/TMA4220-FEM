@@ -42,7 +42,7 @@ def plot_mesh2(points, triangles, latex=True):
     plt.triplot(points[:, 0], points[:, 1])
 
 
-def plot_solution_old(points, solution, triangles, color="blue"):
+def plot_solution_old(points, solution, triangles, color="blue", latex=False):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
