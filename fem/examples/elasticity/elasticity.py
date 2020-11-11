@@ -6,7 +6,8 @@ from fem.fe.fe_system import FESystem
 from fem.fe.fe_values import FEValues
 from fem.fe.fe_q import FE_Q
 from fem.function import Function
-from fem.plotting import plot_mesh, plot_solution, plot_solution_old
+from fem.plotting import plot_mesh, plot_solution, plot_solution_old, \
+    plot_vector_field
 from fem.supplied import getplate
 from fem.triangle import Cell
 from fem.quadrature_lib import QGauss
@@ -209,7 +210,7 @@ class Elasticity:
         print("Solve")
         self.solution = np.linalg.solve(self.system_matrix, self.system_rhs)
 
-    def output_results(self, plot, plot_func=plot_solution):
+    def output_results(self, plot, plot_func=plot_solution, latex=True):
         print("Output results")
 
         u_length = len(self.solution) // 2
@@ -224,11 +225,13 @@ class Elasticity:
                 u_2[i // 2] = self.solution[i]
 
         if plot:
-            ax = plot_func(self.points, u_1, self.triangles)
+            ax = plot_func(self.points, u_1, self.triangles, latex=latex)
             ax.set_title("numerical u_1")
 
-            ax2 = plot_func(self.points, u_2, self.triangles)
+            ax2 = plot_func(self.points, u_2, self.triangles, latex=latex)
             ax2.set_title("numerical u_2")
+
+            plot_vector_field(self.points, u_1, u_2, latex=latex)
 
     def compute_error(self):
         print("Compute error")
@@ -312,7 +315,7 @@ class Elasticity:
         return Error(L2_error=l2_error, H1_error=h1_error,
                      H1_semi_error=h1_error_semi_norm, h=self.h), gradients
 
-    def stress_recovery(self, gradients):
+    def stress_recovery(self, gradients, plot_func=plot_solution):
         # Each element: (gradient sum, #elements in the sum)
         nodes = [[0, 0] for i in range(len(self.points))]
         for triangle, gradient in zip(self.triangles, gradients):
@@ -357,18 +360,16 @@ class Elasticity:
             sigma_yy.append(sigma_bar[1])
             sigma_xy.append(sigma_bar[2])
 
-        plot_func = plot_solution_old
-
         ax = plot_func(self.points, np.array(sigma_xx), self.triangles,
-                           latex=True)
+                       latex=True)
         ax.set_title("$\sigma_{xx}")
 
         ax = plot_func(self.points, np.array(sigma_yy), self.triangles,
-                           latex=True)
+                       latex=True)
         ax.set_title("$\sigma_{yy}")
 
         ax = plot_func(self.points, np.array(sigma_xy), self.triangles,
-                           latex=True)
+                       latex=True)
         ax.set_title("$\sigma_{xy}")
 
         plt.show()
@@ -378,9 +379,9 @@ class Elasticity:
         self.setup_system()
         self.assemble_system()
         self.solve()
-        self.output_results(plot, plot_func=plot_solution_old)
+        self.output_results(plot, plot_func=plot_solution)
         error, gradients = self.compute_error()
-        self.stress_recovery(gradients)
+        self.stress_recovery(gradients, plot_func=plot_solution)
         return error
 
 
