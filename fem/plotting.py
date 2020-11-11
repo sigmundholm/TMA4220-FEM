@@ -82,40 +82,34 @@ def plot_solution(points, solution, triangles, latex=False):
     return ax1
 
 
-def plot_vector_field(points, u_1, u_2, latex=False):
+def plot_vector_field(xs, ys, U_1, U_2, latex=False):
     if latex:
         rc('font', **{'family': 'sans-serif', 'sans-serif': ['Helvetica']})
         # for Palatino and other serif fonts use:
         # rc('font',**{'family':'serif','serif':['Palatino']})
         rc('text', usetex=True)
 
-    min_x, max_x = -1, 1
-    min_y, max_y = -1, 1
-
-    n = int(np.sqrt(len(points)))
-    U_1 = np.zeros((n, n))
-    U_2 = np.zeros((n, n))
-
-    delta_x = ((max_x - min_x) / (n - 1))
-    delta_y = ((max_y - min_y) / (n - 1))
-
-    for point, u_1_val, u_2_val in zip(points, u_1, u_2):
-        x, y = point
-        x_index = int(round((x - min_x) / delta_x, 0))
-        y_index = int(round((y - min_y) / delta_y, 0))
-
-        U_1[y_index, x_index] = u_1_val
-        U_2[y_index, x_index] = u_2_val
-
-    X = np.linspace(min_x, max_x, n)
-    Y = np.linspace(min_y, max_y, n)
-
     fig, ax = plt.subplots()
-    q = ax.quiver(X, Y, U_1, U_2)
+    q = ax.quiver(xs, ys, U_1, U_2)
     """
     ax.quiverkey(q, X=0.3, Y=1.1, U=1,
                  label='Quiver key, length = 10', labelpos='E')
     """
+
+
+def plot_deformed_object(points, U_1, U_2, color="gray"):
+    n = int(np.sqrt(len(points)))
+    xs, ys = np.linspace(-1, 1, n), np.linspace(-1, 1, n)
+    X, Y = np.meshgrid(xs, ys)
+
+    X += U_1
+    Y += U_2
+
+    fig, ax = plt.subplots()
+
+    for i in range(n):
+        ax.plot(X[i, :], Y[i, :], color=color)
+        ax.plot(X[:, i], Y[:, i], color=color)
 
 
 if __name__ == '__main__':

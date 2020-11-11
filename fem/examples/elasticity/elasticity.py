@@ -7,7 +7,7 @@ from fem.fe.fe_values import FEValues
 from fem.fe.fe_q import FE_Q
 from fem.function import Function
 from fem.plotting import plot_mesh, plot_solution, plot_solution_old, \
-    plot_vector_field
+    plot_vector_field, plot_deformed_object
 from fem.supplied import getplate
 from fem.triangle import Cell
 from fem.quadrature_lib import QGauss
@@ -85,13 +85,15 @@ class Elasticity:
         # and False else.
         self.is_dirichlet = is_dirichlet
 
-    def make_grid(self):
+    def make_grid(self, plot=True):
         print("Make grid")
         points, triangles, edges = getplate.get_plate(self.num_triangles)
         self.points = points
         self.triangles = triangles
         self.edges = edges
-        plot_mesh(points, triangles, edges)
+
+        if plot:
+            plot_mesh(points, triangles, edges)
 
         h = 0
         Cell.points = self.points
@@ -210,9 +212,7 @@ class Elasticity:
         print("Solve")
         self.solution = np.linalg.solve(self.system_matrix, self.system_rhs)
 
-    def output_results(self, plot, plot_func=plot_solution, latex=True):
-        print("Output results")
-
+    def get_as_fields(self):
         u_length = len(self.solution) // 2
         u_1 = np.zeros(u_length)
         u_2 = np.zeros(u_length)
@@ -224,6 +224,31 @@ class Elasticity:
             else:
                 u_2[i // 2] = self.solution[i]
 
+        min_x, max_x = -1, 1
+        min_y, max_y = -1, 1
+
+        n = int(np.sqrt(len(self.points)))
+        U_1 = np.zeros((n, n))
+        U_2 = np.zeros((n, n))
+
+        delta_x = ((max_x - min_x) / (n - 1))
+        delta_y = ((max_y - min_y) / (n - 1))
+
+        for point, u_1_val, u_2_val in zip(self.points, u_1, u_2):
+            x, y = point
+            x_index = int(round((x - min_x) / delta_x, 0))
+            y_index = int(round((y - min_y) / delta_y, 0))
+
+            U_1[y_index, x_index] = u_1_val
+            U_2[y_index, x_index] = u_2_val
+
+        return u_1, u_2, U_1, U_2
+
+    def output_results(self, gradients, plot=True, plot_func=plot_solution,
+                       latex=True):
+        print("Output results")
+        u_1, u_2, U_1, U_2 = self.get_as_fields()
+
         if plot:
             ax = plot_func(self.points, u_1, self.triangles, latex=latex)
             ax.set_title("numerical u_1")
@@ -231,7 +256,15 @@ class Elasticity:
             ax2 = plot_func(self.points, u_2, self.triangles, latex=latex)
             ax2.set_title("numerical u_2")
 
-            plot_vector_field(self.points, u_1, u_2, latex=latex)
+            # Plot the displacements as a vector field
+            n = int(np.sqrt(len(self.points)))
+            xs = np.linspace(-1, 1, n)
+            plot_vector_field(xs, xs, U_1, U_2, latex=latex)
+
+            # Visualise the displacements in a deformed object
+            plot_deformed_object(self.points, U_1, U_2)
+
+        self.stress_recovery(gradients, plot_func=plot_solution_old, plot=plot)
 
     def compute_error(self):
         print("Compute error")
@@ -315,7 +348,7 @@ class Elasticity:
         return Error(L2_error=l2_error, H1_error=h1_error,
                      H1_semi_error=h1_error_semi_norm, h=self.h), gradients
 
-    def stress_recovery(self, gradients, plot_func=plot_solution):
+    def stress_recovery(self, gradients, plot_func=plot_solution, plot=True):
         # Each element: (gradient sum, #elements in the sum)
         nodes = [[0, 0] for i in range(len(self.points))]
         for triangle, gradient in zip(self.triangles, gradients):
@@ -360,28 +393,28 @@ class Elasticity:
             sigma_yy.append(sigma_bar[1])
             sigma_xy.append(sigma_bar[2])
 
-        ax = plot_func(self.points, np.array(sigma_xx), self.triangles,
-                       latex=True)
-        ax.set_title("$\sigma_{xx}")
+        if plot:
+            ax = plot_func(self.points, np.array(sigma_xx), self.triangles,
+                           latex=True)
+            ax.set_title("$\sigma_{xx}")
 
-        ax = plot_func(self.points, np.array(sigma_yy), self.triangles,
-                       latex=True)
-        ax.set_title("$\sigma_{yy}")
+            ax = plot_func(self.points, np.array(sigma_yy), self.triangles,
+                           latex=True)
+            ax.set_title("$\sigma_{yy}")
 
-        ax = plot_func(self.points, np.array(sigma_xy), self.triangles,
-                       latex=True)
-        ax.set_title("$\sigma_{xy}")
-
-        plt.show()
+            ax = plot_func(self.points, np.array(sigma_xy), self.triangles,
+                           latex=True)
+            ax.set_title("$\sigma_{xy}")
 
     def run(self, plot=True) -> Error:
-        self.make_grid()
+        self.make_grid(plot=plot)
         self.setup_system()
         self.assemble_system()
         self.solve()
-        self.output_results(plot, plot_func=plot_solution)
         error, gradients = self.compute_error()
-        self.stress_recovery(gradients, plot_func=plot_solution)
+        self.output_results(gradients, plot=plot, plot_func=plot_solution)
+
+        plt.show()
         return error
 
 
@@ -396,5 +429,5 @@ if __name__ == '__main__':
     rhs = RightHandSide(nu, E)
     analytical = AnalyticalSolution()
 
-    p = Elasticity(2, 1, 3, 15, rhs, analytical, is_dirichlet, nu, E)
+    p = Elasticity(2, 1, 3, 10, rhs, analytical, is_dirichlet, nu, E)
     p.run()
