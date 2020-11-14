@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import namedtuple
+import scipy.sparse.linalg
 
 from fem.fe.fe_system import FESystem
 from fem.fe.fe_values import FEValues
@@ -205,12 +206,11 @@ class Elasticity:
                 self.system_rhs[2 * i] = g_1
                 self.system_rhs[2 * i + 1] = g_2
 
-    def set_boundary_conditions(self):
-        pass
-
     def solve(self):
         print("Solve")
-        self.solution = np.linalg.solve(self.system_matrix, self.system_rhs)
+        sparse_A = scipy.sparse.csr_matrix(self.system_matrix)
+        solution = scipy.sparse.linalg.spsolve(sparse_A, self.system_rhs)
+        self.solution = solution.reshape((-1, 1))
 
     def get_as_fields(self):
         u_length = len(self.solution) // 2
