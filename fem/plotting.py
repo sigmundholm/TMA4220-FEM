@@ -90,11 +90,11 @@ def plot_vector_field(xs, ys, U_1, U_2, latex=False):
         rc('text', usetex=True)
 
     fig, ax = plt.subplots()
+    ax.set_xlabel("$x$")
+    ax.set_ylabel("$y$")
     q = ax.quiver(xs, ys, U_1, U_2)
-    """
     ax.quiverkey(q, X=0.3, Y=1.1, U=1,
-                 label='Quiver key, length = 10', labelpos='E')
-    """
+                 label=r'$\textrm{Arrow length = 1}$', labelpos='E')
 
 
 def plot_deformed_object(points, U_1, U_2, color="gray"):

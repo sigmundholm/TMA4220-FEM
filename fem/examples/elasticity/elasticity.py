@@ -264,7 +264,7 @@ class Elasticity:
             # Visualise the displacements in a deformed object
             plot_deformed_object(self.points, U_1, U_2)
 
-        self.stress_recovery(gradients, plot_func=plot_solution_old, plot=plot)
+        self.stress_recovery(gradients, plot_func=plot_func, plot=plot)
 
     def compute_error(self):
         print("Compute error")
@@ -406,8 +406,8 @@ class Elasticity:
                            latex=True)
             ax.set_title("$\sigma_{xy}")
 
-    def run(self, plot=True) -> Error:
-        self.make_grid(plot=plot)
+    def run(self, plot=True, plot_grid=False) -> Error:
+        self.make_grid(plot=plot_grid)
         self.setup_system()
         self.assemble_system()
         self.solve()
@@ -416,6 +416,23 @@ class Elasticity:
 
         plt.show()
         return error
+
+
+def plot_exact_solution(problem: Elasticity, analytical: Function):
+    values = analytical.value_list(problem.points)  # .reshape((-1, 1))
+    ax = plot_solution(problem.points, values[:, 0], None, latex=True)
+    ax.set_title("Analytical solution")
+
+    u1, u2, U1, U2 = problem.get_as_fields()
+
+    diff_u1 = values[:, 0] - u1
+    ax1 = plot_solution(problem.points, diff_u1, None, latex=True)
+    ax1.set_title("diff u1")
+
+    diff_u2 = values[:, 1] - u2
+    ax2 = plot_solution(problem.points, diff_u2, None, latex=True)
+    ax2.set_title("diff u2")
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -429,5 +446,7 @@ if __name__ == '__main__':
     rhs = RightHandSide(nu, E)
     analytical = AnalyticalSolution()
 
-    p = Elasticity(2, 1, 3, 10, rhs, analytical, is_dirichlet, nu, E)
-    p.run()
+    p = Elasticity(2, 1, 3, 32, rhs, analytical, is_dirichlet, nu, E)
+    p.run(plot=True)
+
+    # plot_exact_solution(p, analytical)
