@@ -66,7 +66,9 @@ def convergence_plot(ns, errors, yscale="log2", desired_order=2,
     plt.show()
 
 
-def add_convergence_line(ax, ns, errors, yscale="log2", xlabel="$N$", name=""):
+def add_convergence_line(ax, ns, errors, yscale="log2", xlabel="$N$",
+                         ylabel=r"\textrm{Error}", name="", desired_order=0,
+                         reference_line_offset=0.5):
     # Remove small tick lines on the axes, that doesnt have any number with them.
     matplotlib.rcParams['xtick.minor.size'] = 0
     matplotlib.rcParams['xtick.minor.width'] = 0
@@ -101,8 +103,17 @@ def add_convergence_line(ax, ns, errors, yscale="log2", xlabel="$N$", name=""):
     ax.set_xticklabels(ns_names)
 
     ax.set_xlabel(xlabel)
-    ax.set_ylabel(r"\textrm{Error}")
+    ax.set_ylabel(ylabel)
 
+    # Create reference line for desired order of convergence
+    if desired_order:
+        ns = np.array(ns)
+        # line = desired_order * ns + res[1] - 0.5
+        line = np.exp(
+            -desired_order * np.log(ns) + res[1] - reference_line_offset)
+        ax.plot(ns, line, "--", color="gray",
+                label=r"$\textrm{Convergence order " + str(
+                    desired_order) + " reference}$")
     ax.legend()
 
     return ax
@@ -129,7 +140,8 @@ def plot3d(field, title="", latex=False, z_label="z", xs=None, ys=None):
     return ax
 
 
-def conv_plots(data, columns, title="", latex=False, domain_size=1, **kwargs):
+def conv_plots(data, columns, title="", latex=False, domain_size=1,
+               desired_order=0, reference_line_offset=0.5, **kwargs):
     if latex:
         rc('font', **{'family': 'sans-serif', 'sans-serif': ['Helvetica']})
     # for Palatino and other serif fonts use:
@@ -147,9 +159,14 @@ def conv_plots(data, columns, title="", latex=False, domain_size=1, **kwargs):
         print()
         print(col_name, data_col)
         ax = add_convergence_line(ax, mesh_size, data_col, "log2",
-                                  name=col_name, xlabel=kwargs.get("xlabel")
-                                                        or "$N$")
+                                  name=col_name,
+                                  xlabel=kwargs.get("xlabel") or "$N$",
+                                  ylabel=kwargs.get("ylabel") or r"\textrm{"
+                                                                 r"Error}",
+                                  desired_order=desired_order,
+                                  reference_line_offset=reference_line_offset)
     ax.set_title(title)
+    return ax
 
 
 if __name__ == '__main__':
