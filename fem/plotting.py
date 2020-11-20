@@ -1,10 +1,10 @@
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import rc
 from matplotlib.tri import Triangulation
 import numpy as np
 
-from fem.supplied import getdisc
+from fem.supplied import getdisc, getplate
 
 
 def plot_mesh(points, triangles, edges):
@@ -42,7 +42,7 @@ def plot_mesh2(points, triangles, latex=True):
     plt.triplot(points[:, 0], points[:, 1])
 
 
-def plot_solution_old(points, solution, triangles, color="blue"):
+def plot_solution_old(points, solution, triangles, color="blue", latex=False):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
@@ -82,14 +82,44 @@ def plot_solution(points, solution, triangles, latex=False):
     return ax1
 
 
+def plot_vector_field(xs, ys, U_1, U_2, latex=False):
+    if latex:
+        rc('font', **{'family': 'sans-serif', 'sans-serif': ['Helvetica']})
+        # for Palatino and other serif fonts use:
+        # rc('font',**{'family':'serif','serif':['Palatino']})
+        rc('text', usetex=True)
+
+    fig, ax = plt.subplots()
+    ax.set_xlabel("$x$")
+    ax.set_ylabel("$y$")
+    q = ax.quiver(xs, ys, U_1, U_2)
+    ax.quiverkey(q, X=0.3, Y=1.1, U=1,
+                 label=r'$\textrm{Arrow length = 1}$', labelpos='E')
+
+
+def plot_deformed_object(points, U_1, U_2, color="gray"):
+    n = int(np.sqrt(len(points)))
+    xs, ys = np.linspace(-1, 1, n), np.linspace(-1, 1, n)
+    X, Y = np.meshgrid(xs, ys)
+
+    X += U_1
+    Y += U_2
+
+    fig, ax = plt.subplots()
+
+    for i in range(n):
+        ax.plot(X[i, :], Y[i, :], color=color)
+        ax.plot(X[:, i], Y[:, i], color=color)
+
+
 if __name__ == '__main__':
     points, tri, edge = getdisc.get_disk(800)
     # plot_mesh2(points, tri)
-    from fem.supplied import getplate
-    points, tri, edge = getplate.get_plate(10)
+    points, tri, edge = getplate.get_plate(11)
     print(len(points))
     print(tri)
-    edge -= 1
+
+    print(len(points))
 
     plot_mesh(points, tri, edge)
     # z = np.linspace(-1, 1, len(points))

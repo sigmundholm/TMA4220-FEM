@@ -9,8 +9,7 @@ import os
 
 def convergence_plot(ns, errors, yscale="log2", desired_order=2,
                      reference_line_offset=0.5,
-                     xlabel="$N$", ylabel=r"\textrm{Error}", title="",
-                     show_conv_order=True):
+                     xlabel="$N$", title=""):
     # Remove small tick lines on the axes, that doesnt have any number with them.
     matplotlib.rcParams['xtick.minor.size'] = 0
     matplotlib.rcParams['xtick.minor.width'] = 0
@@ -35,10 +34,9 @@ def convergence_plot(ns, errors, yscale="log2", desired_order=2,
         ax.set_yscale("log")
 
     ax.set_xscale("log")
-    if show_conv_order:
-        ax.set_title(
-            r"\textrm{" + title + r"}\newline \small{\textrm{Convergence order: " + str(
-                -round(res[0], 2)) + " (lin.reg.)}}")
+    ax.set_title(
+        r"\textrm{" + title + r"}\newline \small{\textrm{Convergence order: " + str(
+            -round(res[0], 2)) + " (lin.reg.)}}")
     # title(r"""\Huge{Big title !} \newline \tiny{Small subtitle !}""")
 
     # Remove scientific notation along x-axis
@@ -52,6 +50,59 @@ def convergence_plot(ns, errors, yscale="log2", desired_order=2,
     ax.set_xticklabels(ns_names)
 
     ax.set_xlabel(xlabel)
+    ax.set_ylabel(r"\textrm{Error}")
+
+    # Create reference line for desired order of convergence
+    if desired_order:
+        ns = np.array(ns)
+        # line = desired_order * ns + res[1] - 0.5
+        line = np.exp(
+            -desired_order * np.log(ns) + res[1] - reference_line_offset)
+        ax.plot(ns, line, "--", color="gray",
+                label=r"$\textrm{Convergence order " + str(
+                    desired_order) + " reference}$")
+        ax.legend()
+
+    plt.show()
+
+
+def add_convergence_line(ax, ns, errors, yscale="log2", xlabel="$N$",
+                         ylabel=r"\textrm{Error}", name="", desired_order=0,
+                         reference_line_offset=0.5):
+    # Remove small tick lines on the axes, that doesnt have any number with them.
+    matplotlib.rcParams['xtick.minor.size'] = 0
+    matplotlib.rcParams['xtick.minor.width'] = 0
+    matplotlib.rcParams['ytick.minor.size'] = 0
+    matplotlib.rcParams['ytick.minor.width'] = 0
+
+    rc('font', **{'family': 'sans-serif', 'sans-serif': ['Helvetica']})
+    # for Palatino and other serif fonts use:
+    # rc('font',**{'family':'serif','serif':['Palatino']})
+    rc('text', usetex=True)
+
+    res = np.polyfit(np.log(ns), np.log(errors), deg=1)
+    print("Polyfit:", name, res)
+    print("Order of convergence", -res[0])
+
+    ax.plot(ns, errors, "-o", label=f'${name}: {abs(round(res[0], 3))}$')
+    if yscale == "log2":
+        ax.set_yscale("log", basey=2)
+    else:
+        ax.set_yscale("log")
+
+    ax.set_xscale("log")
+
+    # Remove scientific notation along x-axis
+    ax.xaxis.set_major_formatter(StrMethodFormatter('{x:.0f}'))
+    ax.xaxis.set_minor_formatter(NullFormatter())
+
+    ax.set_xticks(ns)
+    ns_names = []
+    for n in ns:
+        ns_names.append(f'${round(n, 2)}$')
+    ax.set_xticklabels(ns_names)
+
+    ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
     # Create reference line for desired order of convergence
@@ -59,13 +110,13 @@ def convergence_plot(ns, errors, yscale="log2", desired_order=2,
         ns = np.array(ns)
         # line = desired_order * ns + res[1] - 0.5
         line = np.exp(
-            desired_order * np.log(ns) + res[1] - reference_line_offset)
+            -desired_order * np.log(ns) + res[1] - reference_line_offset)
         ax.plot(ns, line, "--", color="gray",
                 label=r"$\textrm{Convergence order " + str(
                     desired_order) + " reference}$")
-        ax.legend()
+    ax.legend()
 
-    plt.show()
+    return ax
 
 
 def plot3d(field, title="", latex=False, z_label="z", xs=None, ys=None):
@@ -89,23 +140,43 @@ def plot3d(field, title="", latex=False, z_label="z", xs=None, ys=None):
     return ax
 
 
+def conv_plots(data, columns, title="", latex=False, domain_size=1,
+               desired_order=0, reference_line_offset=0.5, **kwargs):
+    if latex:
+        rc('font', **{'family': 'sans-serif', 'sans-serif': ['Helvetica']})
+    # for Palatino and other serif fonts use:
+    # rc('font',**{'family':'serif','serif':['Palatino']})
+    rc('text', usetex=True)
+
+    print(columns)
+    first_axis_name = columns[0]
+    mesh_size = data[:, 0]
+    # ns = domain_size / mesh_size
+
+    fig, ax = plt.subplots()
+    for col_name, data_col in zip(columns[1:], [data[:, i] for i in
+                                                range(1, data.shape[1])]):
+        print()
+        print(col_name, data_col)
+        ax = add_convergence_line(ax, mesh_size, data_col, "log2",
+                                  name=col_name,
+                                  xlabel=kwargs.get("xlabel") or "$N$",
+                                  ylabel=kwargs.get("ylabel") or r"\textrm{"
+                                                                 r"Error}",
+                                  desired_order=desired_order,
+                                  reference_line_offset=reference_line_offset)
+    ax.set_title(title)
+    return ax
+
+
 if __name__ == '__main__':
-    # Example data with 2nd order convergence
-    ns = [10, 20, 40, 80]
-    errors = np.array([0.0008550438272162397, 0.00021361488748972146,
-                       5.1004121790487744e-05,
-                       1.0208028014102588e-05]) / 1.0788731827251923
+    base = os.getcwd()
 
-    ns = [50, 100, 200, 400, 800]
-    hs = [0.44, 0.29, 0.21, 0.14, 0.10]
-    l2_dirichlet = np.array([1.14168252, 0.4044935, 0.19385404, 0.08174407,
-                             0.04315963]) / 2.5911  # Dirichlet
-    l2_neumann = np.array([1.09804361, 0.46405342, 0.20519723, 0.08935962,
-                           0.04450886]) / 2.5911  # Neumann
-    # Neumann
+    poly_order = 2
+    full_path = os.path.join(base,
+                             f"build/src/streamline_diffusion/errors-o{poly_order}-eps=0.100000.csv")
 
-    convergence_plot(hs, l2_neumann, yscale="log10", desired_order=2,
-                     reference_line_offset=1, xlabel="$h$",
-                     ylabel=r"$\|u-u_h\|_{L^2}/\|u\|_{L^2}$",
-                     show_conv_order=False)
-    plt.show()
+    head = list(map(str.strip, open(full_path).readline().split(",")))
+    data = np.genfromtxt(full_path, delimiter=",", skip_header=True)
+
+    conv_plots(data, head, title=f"Polynomial order: {poly_order}")

@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from fem.fe_values import FEFaceValues, FEValues
-from fem.fe_q import FE_Q
+from fem.fe.fe_values import FEFaceValues, FEValues
+from fem.fe.fe_q import FE_Q
 from fem.function import Function
 from fem.plotting import plot_mesh, plot_solution
 from fem.supplied import getdisc
@@ -39,7 +39,7 @@ class Poisson:
     solution = None
 
     def __init__(self, dim, degree, num_triangles, RHS, NeumannBD,
-                 is_dirichlet: callable):
+                 is_dirichlet: callable, quad_degree):
         self.dim = dim
         self.degree = degree
         self.num_triangles = num_triangles
@@ -53,12 +53,13 @@ class Poisson:
         # and False else.
         self.is_dirichlet = is_dirichlet
 
+        self.quad_degree = quad_degree
+
     def make_grid(self):
         print("Make grid")
         points, triangles, edges = getdisc.get_disk(self.num_triangles,
                                                     dim=self.dim)
         # TODO med firkant som mesh funker ikke dirichlet på bdd.
-        from fem.supplied import getplate
         # points, triangles, edges = getplate.get_plate(self.num_triangles)
         self.points = points
         self.triangles = triangles
@@ -92,11 +93,11 @@ class Poisson:
         :return:
         """
         print("Assemble system")
-        gauss = QGauss(dim=self.dim, degree=self.degree)
+        gauss = QGauss(dim=self.dim, n=self.quad_degree)
         fe_values = FEValues(self.fe, gauss, self.points, self.edges,
                              self.is_dirichlet, update_gradients=True)
 
-        face_gauss = QGauss(dim=self.dim - 1, degree=self.degree)
+        face_gauss = QGauss(dim=self.dim - 1, n=self.quad_degree)
         fe_face_values = FEFaceValues(self.fe, face_gauss, self.points,
                                       self.edges, self.is_dirichlet)
 
@@ -122,12 +123,12 @@ class Poisson:
                               @ fe_values.shape_grad(j, q_index) \
                               * fe_values.JxW(q_index)  # (∇u_i, ∇v_j)
 
-                        self.system_matrix[fe_values.local2global[i],
-                                           fe_values.local2global[j]] += val
+                        self.system_matrix[fe_values.loc2glob_dofs[i],
+                                           fe_values.loc2glob_dofs[j]] += val
 
                     val = fe_values.shape_value(i, q_index) * rhs.value(x_q) \
                           * fe_values.JxW(q_index)  # (v_i, f)
-                    self.system_rhs[fe_values.local2global[i]] += val
+                    self.system_rhs[fe_values.loc2glob_dofs[i]] += val
 
             for face in cell.face_iterators():
                 if not face.at_boundary():
@@ -142,7 +143,7 @@ class Poisson:
                         g = neumann_bdd_values.value(x_q)
                         val = fe_face_values.shape_value(j, q_index) * g \
                               * fe_face_values.JxW(q_index)  # (g, v_j)
-                        self.system_rhs[fe_face_values.local2global[j]] += val
+                        self.system_rhs[fe_face_values.loc2glob_dofs[j]] += val
 
         # TODO this fixes so the matrix is invertible, but could just have
         # removed those dofs that are not a dof from the matrix, so this
@@ -182,5 +183,6 @@ if __name__ == '__main__':
         return p[1] <= 0
 
 
-    p = Poisson(2, 4, 200, RightHandSide, NeumannBoundaryValues, is_dirichlet)
+    p = Poisson(2, 1, 200, RightHandSide, NeumannBoundaryValues,
+                is_dirichlet, quad_degree=4)
     p.run()

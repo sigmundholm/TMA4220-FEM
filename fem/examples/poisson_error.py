@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from fem.examples.poisson import Poisson
-from fem.fe_values import FEValues
+from fem.fe.fe_values import FEValues
 from fem.function import Function
 from fem.plotting import plot_solution
 from fem.quadrature_lib import QGauss
@@ -50,7 +50,7 @@ class PoissonError(Poisson):
         print("Compute error")
         analytical_soln: Function = self.AnalyticalSoln()
 
-        gauss = QGauss(dim=self.dim, degree=self.degree)
+        gauss = QGauss(dim=self.dim, n=self.degree)
         fe_values = FEValues(self.fe, gauss, self.points, self.edges,
                              self.is_dirichlet, update_gradients=True)
 
